@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uber Eats Shift Tracker</title>
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -11,29 +16,91 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #f7fafc;
+            --bg-hover: #edf2f7;
+            --text-primary: #333333;
+            --text-secondary: #718096;
+            --text-muted: #4a5568;
+            --border-color: #e2e8f0;
+            --border-light: #ddd;
+            --accent: #06c167;
+            --accent-dark: #05a857;
+            --secondary: #5c6ac4;
+            --secondary-dark: #4c5ab8;
+            --danger: #e53e3e;
+            --danger-dark: #c53030;
+            --dark-bg: #2d3748;
+            --dark-hover: #1a202c;
+            --calculated-bg: #faf5ff;
+            --calculated-text: #6b46c1;
+        }
+
+        html.dark-mode {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --bg-hover: #5a6c7d;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --border-color: #4a5568;
+            --border-light: #4a5568;
+            --calculated-bg: #2d1b4e;
+            --calculated-text: #d6bcfa;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            color: #333;
+            background: var(--bg-secondary);
+            padding: 15px;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
-            padding: 30px;
+            background: var(--bg-primary);
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         h1 {
-            margin-bottom: 30px;
-            color: #06c167;
+            color: var(--accent);
+            font-size: 1.8em;
+        }
+
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: background-color 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border-color);
         }
 
         .active-shift-banner {
-            background: #06c167;
+            background: var(--accent);
             color: white;
             padding: 15px 20px;
             border-radius: 6px;
@@ -41,6 +108,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .active-shift-banner strong {
@@ -50,17 +119,20 @@
         .shift-controls {
             display: flex;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
         .shift-controls input {
             padding: 10px 15px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-light);
             border-radius: 6px;
             font-size: 14px;
             flex: 1;
             min-width: 150px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s;
         }
 
         button {
@@ -71,43 +143,48 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
         .btn-primary {
-            background: #06c167;
+            background: var(--accent);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #05a857;
+            background: var(--accent-dark);
         }
 
         .btn-secondary {
-            background: #5c6ac4;
+            background: var(--secondary);
             color: white;
         }
 
         .btn-secondary:hover {
-            background: #4c5ab8;
+            background: var(--secondary-dark);
         }
 
         .btn-danger {
-            background: #e53e3e;
+            background: var(--danger);
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c53030;
+            background: var(--danger-dark);
         }
 
         .btn-export {
-            background: #2d3748;
+            background: var(--dark-bg);
             color: white;
             margin-bottom: 15px;
         }
 
         .btn-export:hover {
-            background: #1a202c;
+            background: var(--dark-hover);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
         }
 
         table {
@@ -118,21 +195,22 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 12px 8px;
             text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s;
         }
 
         th {
-            background: #f7fafc;
+            background: var(--bg-tertiary);
             font-weight: 600;
-            color: #4a5568;
+            color: var(--text-muted);
             position: sticky;
             top: 0;
         }
 
         tr:hover {
-            background: #f7fafc;
+            background: var(--bg-hover);
         }
 
         td[contenteditable="true"] {
@@ -141,23 +219,29 @@
         }
 
         td[contenteditable="true"]:hover {
-            background: #edf2f7;
-            outline: 1px solid #cbd5e0;
+            background: var(--border-color);
+            outline: 1px solid var(--border-color);
         }
 
         td[contenteditable="true"]:focus {
-            background: #fff;
-            outline: 2px solid #06c167;
+            background: var(--bg-primary);
+            outline: 2px solid var(--accent);
         }
 
         .calculated {
-            background: #faf5ff;
-            color: #6b46c1;
+            background: var(--calculated-bg);
+            color: var(--calculated-text);
             font-weight: 500;
         }
 
         .money {
             text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .editable-money::before {
+            content: "$";
+            margin-right: 2px;
         }
 
         .notes-cell {
@@ -179,16 +263,17 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--bg-primary);
             padding: 30px;
             border-radius: 8px;
             max-width: 500px;
-            margin: 100px auto;
+            margin: 50px auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
         .modal-content h2 {
             margin-bottom: 20px;
-            color: #06c167;
+            color: var(--accent);
         }
 
         .form-group {
@@ -199,16 +284,19 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #4a5568;
+            color: var(--text-muted);
         }
 
         .form-group input, .form-group textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-light);
             border-radius: 6px;
             font-size: 14px;
             font-family: inherit;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s;
         }
 
         .form-group textarea {
@@ -220,22 +308,104 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .hidden {
             display: none;
         }
 
-        .info-text {
-            color: #718096;
-            font-size: 13px;
-            margin-top: 5px;
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.4em;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .shift-controls {
+                flex-direction: column;
+            }
+
+            .shift-controls input,
+            .shift-controls button {
+                width: 100%;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+
+            .modal-content {
+                margin: 20px auto;
+                padding: 20px;
+                max-width: 95%;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .modal-buttons button {
+                width: 100%;
+            }
+
+            .notes-cell {
+                max-width: 100px;
+            }
+
+            .active-shift-banner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            button {
+                font-size: 16px;
+                padding: 12px 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 1.2em;
+            }
+
+            th, td {
+                padding: 6px 4px;
+                font-size: 11px;
+            }
+
+            .shift-controls input {
+                min-width: 100px;
+            }
+
+            table {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚗 Uber Eats Shift Tracker</h1>
+        <div class="header">
+            <h1>🚗 Uber Eats Shift Tracker</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+        </div>
 
         <div id="activeShiftBanner" class="active-shift-banner hidden">
             <div>
@@ -255,26 +425,28 @@
 
         <button class="btn-export" onclick="exportCSV()">📊 Export to CSV</button>
 
-        <table id="shiftsTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th class="calculated">Hours</th>
-                    <th>Odo Start</th>
-                    <th>Odo End</th>
-                    <th class="calculated">Miles</th>
-                    <th class="money">Earnings</th>
-                    <th class="money">Tips</th>
-                    <th class="money">Gas</th>
-                    <th class="calculated money">Total</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody id="shiftsBody">
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table id="shiftsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th class="calculated">Hours</th>
+                        <th>Odo Start</th>
+                        <th>Odo End</th>
+                        <th class="calculated">Miles</th>
+                        <th class="money">Earnings</th>
+                        <th class="money">Tips</th>
+                        <th class="money">Gas</th>
+                        <th class="money calculated">Total</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="shiftsBody">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div id="endShiftModal" class="modal">
@@ -310,6 +482,19 @@
     <script>
         const API_URL = 'http://localhost:8030/api';
         let activeShift = null;
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeButton();
+        }
+
+        function updateThemeButton() {
+            const button = document.querySelector('.theme-toggle');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            button.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
 
         async function loadShifts() {
             try {
@@ -363,10 +548,10 @@
                     <td contenteditable="true" data-field="odometer_start" data-id="${shift.id}">${shift.odometer_start}</td>
                     <td contenteditable="true" data-field="odometer_end" data-id="${shift.id}">${shift.odometer_end || ''}</td>
                     <td class="calculated">${shift.miles_driven || ''}</td>
-                    <td class="money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
-                    <td class="money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
-                    <td class="money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
-                    <td class="calculated money">${formatMoney(shift.day_total)}</td>
+                    <td class="money editable-money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
+                    <td class="money editable-money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
+                    <td class="money editable-money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
+                    <td class="money calculated">$${formatMoney(shift.day_total)}</td>
                     <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${shift.id}" title="${shift.notes || ''}">${shift.notes || ''}</td>
                 `;
                 
@@ -396,6 +581,8 @@
                 value = value ? parseInt(value) : null;
             } else if (['earnings', 'tips', 'gas_cost'].includes(field)) {
                 value = value ? parseFloat(value) : 0;
+            } else if (field === 'notes') {
+                value = value.length > 0 ? value : null;
             }
 
             try {
@@ -530,6 +717,7 @@
         }
 
         // Initialize
+        updateThemeButton();
         checkActiveShift();
         loadShifts();
     </script>
