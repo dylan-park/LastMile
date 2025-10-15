@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Eats Shift Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #06c167;
+        }
+
+        .active-shift-banner {
+            background: #06c167;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active-shift-banner strong {
+            font-size: 1.1em;
+        }
+
+        .shift-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .shift-controls input {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #06c167;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #05a857;
+        }
+
+        .btn-secondary {
+            background: #5c6ac4;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4c5ab8;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c53030;
+        }
+
+        .btn-export {
+            background: #2d3748;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .btn-export:hover {
+            background: #1a202c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        td[contenteditable="true"] {
+            cursor: text;
+            position: relative;
+        }
+
+        td[contenteditable="true"]:hover {
+            background: #edf2f7;
+            outline: 1px solid #cbd5e0;
+        }
+
+        td[contenteditable="true"]:focus {
+            background: #fff;
+            outline: 2px solid #06c167;
+        }
+
+        .calculated {
+            background: #faf5ff;
+            color: #6b46c1;
+            font-weight: 500;
+        }
+
+        .money {
+            text-align: right;
+        }
+
+        .notes-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            margin: 100px auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #06c167;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-text {
+            color: #718096;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Uber Eats Shift Tracker</h1>
+
+        <div id="activeShiftBanner" class="active-shift-banner hidden">
+            <div>
+                <strong>Active Shift in Progress</strong>
+                <div id="shiftInfo"></div>
+            </div>
+        </div>
+
+        <div id="startShiftSection" class="shift-controls">
+            <input type="number" id="startOdo" placeholder="Starting Odometer" min="0">
+            <button class="btn-primary" onclick="startShift()">Start Shift</button>
+        </div>
+
+        <div id="endShiftSection" class="shift-controls hidden">
+            <button class="btn-danger" onclick="openEndShiftModal()">End Current Shift</button>
+        </div>
+
+        <button class="btn-export" onclick="exportCSV()">📊 Export to CSV</button>
+
+        <table id="shiftsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th class="calculated">Hours</th>
+                    <th>Odo Start</th>
+                    <th>Odo End</th>
+                    <th class="calculated">Miles</th>
+                    <th class="money">Earnings</th>
+                    <th class="money">Tips</th>
+                    <th class="money">Gas</th>
+                    <th class="calculated money">Total</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody id="shiftsBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div id="endShiftModal" class="modal">
+        <div class="modal-content">
+            <h2>End Shift</h2>
+            <div class="form-group">
+                <label>Ending Odometer *</label>
+                <input type="number" id="endOdo" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>Earnings</label>
+                <input type="number" id="earnings" step="0.01" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Tips</label>
+                <input type="number" id="tips" step="0.01" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Gas Cost</label>
+                <input type="number" id="gasCost" step="0.01" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="notes" placeholder="Optional notes about this shift..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="endShift()">Complete Shift</button>
+                <button class="btn-secondary" onclick="closeEndShiftModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8030/api';
+        let activeShift = null;
+
+        async function loadShifts() {
+            try {
+                const response = await fetch(`${API_URL}/shifts`);
+                const shifts = await response.json();
+                renderShifts(shifts);
+            } catch (error) {
+                console.error('Error loading shifts:', error);
+            }
+        }
+
+        async function checkActiveShift() {
+            try {
+                const response = await fetch(`${API_URL}/shifts/active`);
+                activeShift = await response.json();
+                
+                if (activeShift) {
+                    document.getElementById('activeShiftBanner').classList.remove('hidden');
+                    document.getElementById('startShiftSection').classList.add('hidden');
+                    document.getElementById('endShiftSection').classList.remove('hidden');
+                    
+                    const startTime = new Date(activeShift.start_time);
+                    document.getElementById('shiftInfo').textContent = 
+                        `Started at ${startTime.toLocaleString()} | Odometer: ${activeShift.odometer_start}`;
+                } else {
+                    document.getElementById('activeShiftBanner').classList.add('hidden');
+                    document.getElementById('startShiftSection').classList.remove('hidden');
+                    document.getElementById('endShiftSection').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking active shift:', error);
+            }
+        }
+
+        function renderShifts(shifts) {
+            const tbody = document.getElementById('shiftsBody');
+            tbody.innerHTML = '';
+
+            shifts.forEach(shift => {
+                const row = document.createElement('tr');
+                
+                const formatDateTime = (dt) => dt ? new Date(dt).toLocaleString() : '';
+                const formatMoney = (val) => parseFloat(val || 0).toFixed(2);
+                const formatHours = (val) => val ? parseFloat(val).toFixed(2) : '';
+                
+                row.innerHTML = `
+                    <td>${shift.id}</td>
+                    <td>${formatDateTime(shift.start_time)}</td>
+                    <td>${formatDateTime(shift.end_time)}</td>
+                    <td class="calculated">${formatHours(shift.hours_worked)}</td>
+                    <td contenteditable="true" data-field="odometer_start" data-id="${shift.id}">${shift.odometer_start}</td>
+                    <td contenteditable="true" data-field="odometer_end" data-id="${shift.id}">${shift.odometer_end || ''}</td>
+                    <td class="calculated">${shift.miles_driven || ''}</td>
+                    <td class="money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
+                    <td class="money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
+                    <td class="money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
+                    <td class="calculated money">${formatMoney(shift.day_total)}</td>
+                    <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${shift.id}" title="${shift.notes || ''}">${shift.notes || ''}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+
+            // Add blur event listeners for inline editing
+            document.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                cell.addEventListener('blur', handleCellEdit);
+                cell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        cell.blur();
+                    }
+                });
+            });
+        }
+
+        async function handleCellEdit(e) {
+            const cell = e.target;
+            const field = cell.dataset.field;
+            const id = cell.dataset.id;
+            let value = cell.textContent.trim();
+
+            // Parse value based on field type
+            if (['odometer_start', 'odometer_end'].includes(field)) {
+                value = value ? parseInt(value) : null;
+            } else if (['earnings', 'tips', 'gas_cost'].includes(field)) {
+                value = value ? parseFloat(value) : 0;
+            }
+
+            try {
+                const payload = {};
+                payload[field] = value;
+
+                const response = await fetch(`${API_URL}/shifts/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    await loadShifts();
+                } else {
+                    alert('Failed to update shift');
+                    await loadShifts();
+                }
+            } catch (error) {
+                console.error('Error updating shift:', error);
+                alert('Error updating shift');
+                await loadShifts();
+            }
+        }
+
+        async function startShift() {
+            const odoStart = document.getElementById('startOdo').value;
+            
+            if (!odoStart) {
+                alert('Please enter starting odometer reading');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/shifts/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ odometer_start: parseInt(odoStart) })
+                });
+
+                if (response.ok) {
+                    document.getElementById('startOdo').value = '';
+                    await checkActiveShift();
+                    await loadShifts();
+                } else if (response.status === 409) {
+                    alert('There is already an active shift');
+                } else {
+                    alert('Failed to start shift');
+                }
+            } catch (error) {
+                console.error('Error starting shift:', error);
+                alert('Error starting shift');
+            }
+        }
+
+        function openEndShiftModal() {
+            document.getElementById('endShiftModal').style.display = 'block';
+        }
+
+        function closeEndShiftModal() {
+            document.getElementById('endShiftModal').style.display = 'none';
+            document.getElementById('endOdo').value = '';
+            document.getElementById('earnings').value = '0';
+            document.getElementById('tips').value = '0';
+            document.getElementById('gasCost').value = '0';
+            document.getElementById('notes').value = '';
+        }
+
+        async function endShift() {
+            const endOdo = document.getElementById('endOdo').value;
+            
+            if (!endOdo) {
+                alert('Please enter ending odometer reading');
+                return;
+            }
+
+            const earnings = parseFloat(document.getElementById('earnings').value) || 0;
+            const tips = parseFloat(document.getElementById('tips').value) || 0;
+            const gasCost = parseFloat(document.getElementById('gasCost').value) || 0;
+            const notes = document.getElementById('notes').value.trim() || null;
+
+            try {
+                const response = await fetch(`${API_URL}/shifts/${activeShift.id}/end`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        odometer_end: parseInt(endOdo),
+                        earnings,
+                        tips,
+                        gas_cost: gasCost,
+                        notes
+                    })
+                });
+
+                if (response.ok) {
+                    closeEndShiftModal();
+                    await checkActiveShift();
+                    await loadShifts();
+                } else {
+                    alert('Failed to end shift');
+                }
+            } catch (error) {
+                console.error('Error ending shift:', error);
+                alert('Error ending shift');
+            }
+        }
+
+        async function exportCSV() {
+            try {
+                const response = await fetch(`${API_URL}/shifts/export`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'uber_eats_shifts.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error exporting CSV:', error);
+                alert('Error exporting CSV');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('endShiftModal');
+            if (event.target === modal) {
+                closeEndShiftModal();
+            }
+        }
+
+        // Initialize
+        checkActiveShift();
+        loadShifts();
+    </script>
+</body>
+</html>
