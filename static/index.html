@@ -480,7 +480,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8030/api';
+        const API_URL = 'http://localhost:8031/api';
         let activeShift = null;
 
         function toggleTheme() {
@@ -493,7 +493,7 @@
         function updateThemeButton() {
             const button = document.querySelector('.theme-toggle');
             const isDark = document.documentElement.classList.contains('dark-mode');
-            button.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            button.textContent = isDark ? '🌙' : '☀️';
         }
 
         async function loadShifts() {
@@ -564,7 +564,7 @@
                 cell.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        cell.blur();
+                        handleCellEdit({ target: cell });
                     }
                 });
             });
@@ -582,7 +582,8 @@
             } else if (['earnings', 'tips', 'gas_cost'].includes(field)) {
                 value = value ? parseFloat(value) : 0;
             } else if (field === 'notes') {
-                value = value.length > 0 ? value : null;
+                // Explicitly set to empty string if no text, backend will convert to null
+                value = value.length === 0 ? "" : value;
             }
 
             try {

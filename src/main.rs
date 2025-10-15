@@ -102,15 +102,13 @@ async fn main() {
         .route("/api/shifts", get(get_all_shifts))
         .route("/api/shifts/active", get(get_active_shift))
         .route("/api/shifts/start", post(start_shift))
-        .route("/api/shifts/:id/end", post(end_shift))
-        .route("/api/shifts/:id", put(update_shift))
+        .route("/api/shifts/{id}/end", post(end_shift))
+        .route("/api/shifts/{id}", put(update_shift))
         .route("/api/shifts/export", get(export_csv))
         .layer(cors)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
     println!("Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
@@ -259,10 +257,11 @@ async fn update_shift(
     let earnings = payload.earnings.unwrap_or(shift.earnings);
     let tips = payload.tips.unwrap_or(shift.tips);
     let gas_cost = payload.gas_cost.unwrap_or(shift.gas_cost);
-    let notes = payload
-        .notes
-        .and_then(|n| if n.trim().is_empty() { None } else { Some(n) })
-        .or(shift.notes);
+    let notes = if let Some(n) = payload.notes {
+        if n.trim().is_empty() { None } else { Some(n) }
+    } else {
+        shift.notes
+    };
 
     // Recalculate derived fields
     let miles_driven = odometer_end.map(|end| end - odometer_start);
