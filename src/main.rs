@@ -25,6 +25,7 @@ struct Shift {
     tips: BigDecimal,
     gas_cost: BigDecimal,
     day_total: BigDecimal,
+    hourly_pay: Option<BigDecimal>,
     notes: Option<String>,
 }
 
@@ -82,6 +83,7 @@ async fn main() {
             tips DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             gas_cost DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             day_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            hourly_pay DECIMAL(10,2),
             notes TEXT,
             INDEX idx_start_time (start_time DESC)
         )
@@ -197,6 +199,7 @@ async fn end_shift(
     let tips = payload.tips.unwrap_or(BigDecimal::from(0));
     let gas_cost = payload.gas_cost.unwrap_or(BigDecimal::from(0));
     let day_total = &earnings + &tips - &gas_cost;
+    let hourly_pay = &day_total / &hours_worked;
 
     let notes = payload
         .notes
@@ -213,6 +216,7 @@ async fn end_shift(
             tips = ?,
             gas_cost = ?,
             day_total = ?,
+            hourly_pay = ?,
             notes = ?
         WHERE id = ?
         "#,
@@ -225,6 +229,7 @@ async fn end_shift(
     .bind(tips)
     .bind(gas_cost)
     .bind(day_total)
+    .bind(hourly_pay)
     .bind(notes)
     .bind(id)
     .execute(&state.db)
@@ -275,6 +280,16 @@ async fn update_shift(
 
     let day_total = &earnings + &tips - &gas_cost;
 
+    let hourly_pay = if let Some(hw) = &hours_worked {
+        if hw > &BigDecimal::from(0) {
+            Some(&day_total / hw)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     sqlx::query(
         r#"
         UPDATE shifts 
@@ -286,6 +301,7 @@ async fn update_shift(
             tips = ?,
             gas_cost = ?,
             day_total = ?,
+            hourly_pay = ?,
             notes = ?
         WHERE id = ?
         "#,
@@ -298,6 +314,7 @@ async fn update_shift(
     .bind(tips)
     .bind(gas_cost)
     .bind(day_total)
+    .bind(hourly_pay)
     .bind(notes)
     .bind(id)
     .execute(&state.db)
@@ -320,12 +337,12 @@ async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoRespo
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let mut csv = String::from(
-        "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Notes\n",
+        "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
     );
 
     for shift in shifts {
         csv.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             shift.id,
             shift.start_time.format("%Y-%m-%d %H:%M:%S"),
             shift
@@ -339,6 +356,7 @@ async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoRespo
             shift.tips,
             shift.gas_cost,
             shift.day_total,
+            shift.hourly_pay.map_or(String::new(), |hp| hp.to_string()),
             shift.notes.as_deref().unwrap_or("")
         ));
     }

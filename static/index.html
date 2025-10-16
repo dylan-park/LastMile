@@ -440,6 +440,7 @@
                         <th class="money">Tips</th>
                         <th class="money">Gas</th>
                         <th class="money calculated">Total</th>
+                        <th class="money calculated">Hourly Pay</th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -552,6 +553,7 @@
                     <td class="money editable-money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
                     <td class="money editable-money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
                     <td class="money calculated">$${formatMoney(shift.day_total)}</td>
+                    <td class="money calculated">$${shift.hourly_pay ? formatMoney(shift.hourly_pay) : ''}</td>
                     <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${shift.id}" title="${shift.notes || ''}">${shift.notes || ''}</td>
                 `;
                 
