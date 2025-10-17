@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post, put},
 };
 use bigdecimal::BigDecimal;
-use chrono::{Local, NaiveDateTime};
+use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{MySql, Pool, mysql::MySqlPoolOptions};
 use std::sync::Arc;
@@ -154,7 +154,7 @@ async fn start_shift(
         return Err(StatusCode::CONFLICT);
     }
 
-    let now = Local::now().naive_local();
+    let now = Utc::now().naive_utc();
 
     let result = sqlx::query(
         r#"
@@ -182,7 +182,7 @@ async fn end_shift(
     Path(id): Path<i32>,
     Json(payload): Json<EndShiftRequest>,
 ) -> Result<Json<Shift>, StatusCode> {
-    let now = Local::now().naive_local();
+    let now = Utc::now().naive_utc();
 
     // Get the shift to calculate hours and miles
     let shift = sqlx::query_as::<_, Shift>("SELECT * FROM shifts WHERE id = ?")
@@ -207,9 +207,9 @@ async fn end_shift(
 
     sqlx::query(
         r#"
-        UPDATE shifts 
-        SET end_time = ?, 
-            odometer_end = ?, 
+        UPDATE shifts
+        SET end_time = ?,
+            odometer_end = ?,
             miles_driven = ?,
             hours_worked = ?,
             earnings = ?,
@@ -292,7 +292,7 @@ async fn update_shift(
 
     sqlx::query(
         r#"
-        UPDATE shifts 
+        UPDATE shifts
         SET odometer_start = ?,
             odometer_end = ?,
             miles_driven = ?,

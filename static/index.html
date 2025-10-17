@@ -482,6 +482,7 @@
 
     <script>
         const API_URL = 'http://localhost:8031/api';
+        const USER_TIMEZONE = 'America/Chicago';
         let activeShift = null;
 
         function toggleTheme() {
@@ -495,6 +496,27 @@
             const button = document.querySelector('.theme-toggle');
             const isDark = document.documentElement.classList.contains('dark-mode');
             button.textContent = isDark ? '🌙' : '☀️';
+        }
+
+        function formatDateTime(utcDateString) {
+            if (!utcDateString) return '';
+            
+            try {
+                const date = new Date(utcDateString + 'Z');
+                
+                return new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZone: USER_TIMEZONE
+                }).format(date);
+            } catch (error) {
+                console.error('Error formatting date:', error);
+                return utcDateString;
+            }
         }
 
         async function loadShifts() {
@@ -517,9 +539,9 @@
                     document.getElementById('startShiftSection').classList.add('hidden');
                     document.getElementById('endShiftSection').classList.remove('hidden');
                     
-                    const startTime = new Date(activeShift.start_time);
+                    const startTime = formatDateTime(activeShift.start_time);
                     document.getElementById('shiftInfo').textContent = 
-                        `Started at ${startTime.toLocaleString()} | Odometer: ${activeShift.odometer_start}`;
+                        `Started at ${startTime} | Odometer: ${activeShift.odometer_start}`;
                 } else {
                     document.getElementById('activeShiftBanner').classList.add('hidden');
                     document.getElementById('startShiftSection').classList.remove('hidden');
@@ -537,7 +559,6 @@
             shifts.forEach(shift => {
                 const row = document.createElement('tr');
                 
-                const formatDateTime = (dt) => dt ? new Date(dt).toLocaleString() : '';
                 const formatMoney = (val) => parseFloat(val || 0).toFixed(2);
                 const formatHours = (val) => val ? parseFloat(val).toFixed(2) : '';
                 
