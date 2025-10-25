@@ -81,11 +81,11 @@ const UI = {
     });
 
     document.getElementById("statTotalEarnings").textContent =
-      `${formatMoney(totalEarnings)}`;
+      `$${formatMoney(totalEarnings)}`;
     document.getElementById("statTotalHours").textContent =
       formatHours(totalHours);
     document.getElementById("statAvgRate").textContent =
-      `${formatMoney(avgRate)}`;
+      `$${formatMoney(avgRate)}`;
     document.getElementById("statTotalMiles").textContent =
       Math.round(totalMiles);
   },
@@ -197,8 +197,8 @@ const UI = {
                 <td class="money editable-money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
-                <td class="money calculated">${formatMoney(shift.day_total)}</td>
-                <td class="money calculated">${shift.hourly_pay ? formatMoney(shift.hourly_pay) : ""}</td>
+                <td class="money calculated">$${formatMoney(shift.day_total)}</td>
+                <td class="money calculated">$${shift.hourly_pay ? formatMoney(shift.hourly_pay) : ""}</td>
                 <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${shift.id}" title="${shift.notes || ""}">${shift.notes || ""}</td>
             </tr>
         `,
