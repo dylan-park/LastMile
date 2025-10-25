@@ -107,10 +107,52 @@ const UI = {
     }
   },
 
-  renderShifts(shifts, searchTerm = "") {
+  renderShifts(
+    shifts,
+    searchTerm = "",
+    period = "month",
+    customRange = { start: null, end: null },
+  ) {
     const tbody = document.getElementById("shiftsBody");
 
-    const filtered = shifts.filter((shift) => {
+    // First apply period filtering
+    let periodFiltered = [...shifts];
+
+    if (period === "month") {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      periodFiltered = periodFiltered.filter((shift) => {
+        const shiftDate = parseUTCToLocal(shift.start_time);
+        return (
+          shiftDate.getMonth() === currentMonth &&
+          shiftDate.getFullYear() === currentYear
+        );
+      });
+    } else if (period === "custom") {
+      if (customRange.start || customRange.end) {
+        periodFiltered = periodFiltered.filter((shift) => {
+          const shiftDate = parseUTCToLocal(shift.start_time);
+
+          if (customRange.start && customRange.end) {
+            return (
+              shiftDate >= customRange.start && shiftDate <= customRange.end
+            );
+          } else if (customRange.start) {
+            return shiftDate >= customRange.start;
+          } else if (customRange.end) {
+            return shiftDate <= customRange.end;
+          }
+
+          return true;
+        });
+      }
+    }
+    // If period === "all", no filtering needed
+
+    // Then apply search filtering
+    const filtered = periodFiltered.filter((shift) => {
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
       return (
@@ -155,8 +197,8 @@ const UI = {
                 <td class="money editable-money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
-                <td class="money calculated">$${formatMoney(shift.day_total)}</td>
-                <td class="money calculated">$${shift.hourly_pay ? formatMoney(shift.hourly_pay) : ""}</td>
+                <td class="money calculated">${formatMoney(shift.day_total)}</td>
+                <td class="money calculated">${shift.hourly_pay ? formatMoney(shift.hourly_pay) : ""}</td>
                 <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${shift.id}" title="${shift.notes || ""}">${shift.notes || ""}</td>
             </tr>
         `,

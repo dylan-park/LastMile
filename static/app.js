@@ -8,7 +8,7 @@ async function loadShifts() {
     allShifts = await API.getShifts();
     UI.updateStats(allShifts, statsPeriod, customDateRange);
     const searchTerm = document.getElementById("searchInput").value;
-    UI.renderShifts(allShifts, searchTerm);
+    UI.renderShifts(allShifts, searchTerm, statsPeriod, customDateRange);
   } catch (error) {
     console.error("Error loading shifts:", error);
     UI.showToast("Failed to load shifts", "error");
@@ -155,7 +155,7 @@ function sortTable(field, direction) {
   });
 
   const searchTerm = document.getElementById("searchInput").value;
-  UI.renderShifts(sorted, searchTerm);
+  UI.renderShifts(sorted, searchTerm, statsPeriod, customDateRange);
 }
 
 function toggleTheme() {
@@ -208,8 +208,10 @@ function handleStatsPeriodToggle(period) {
     customDateRangeEl.classList.add("hidden");
   }
 
-  // Update stats with animation
+  // Update stats and table with animation
   UI.updateStats(allShifts, statsPeriod, customDateRange);
+  const searchTerm = document.getElementById("searchInput").value;
+  UI.renderShifts(allShifts, searchTerm, statsPeriod, customDateRange);
 }
 
 function handleCustomDateChange() {
@@ -223,12 +225,14 @@ function handleCustomDateChange() {
     ? new Date(endDateInput + "T23:59:59")
     : null;
 
-  // Update stats immediately
+  // Update stats and table immediately
   UI.updateStats(allShifts, statsPeriod, customDateRange);
+  const searchTerm = document.getElementById("searchInput").value;
+  UI.renderShifts(allShifts, searchTerm, statsPeriod, customDateRange);
 }
 
 const debouncedSearch = debounce((searchTerm) => {
-  UI.renderShifts(allShifts, searchTerm);
+  UI.renderShifts(allShifts, searchTerm, statsPeriod, customDateRange);
 }, 300);
 
 function formatDateForInput(date) {
