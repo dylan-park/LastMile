@@ -1,11 +1,12 @@
 let activeShift = null;
 let allShifts = [];
 let statsPeriod = "month"; // Default to monthly view
+let customDateRange = { start: null, end: null };
 
 async function loadShifts() {
   try {
     allShifts = await API.getShifts();
-    UI.updateStats(allShifts, statsPeriod);
+    UI.updateStats(allShifts, statsPeriod, customDateRange);
     const searchTerm = document.getElementById("searchInput").value;
     UI.renderShifts(allShifts, searchTerm);
   } catch (error) {
@@ -186,13 +187,56 @@ function handleStatsPeriodToggle(period) {
     btn.classList.toggle("active", btn.dataset.period === period);
   });
 
+  // Show/hide custom date range inputs
+  const customDateRangeEl = document.getElementById("customDateRange");
+  if (period === "custom") {
+    customDateRangeEl.classList.remove("hidden");
+
+    // Set default dates to current month if not already set
+    if (!customDateRange.start && !customDateRange.end) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      document.getElementById("startDate").value = formatDateForInput(firstDay);
+      document.getElementById("endDate").value = formatDateForInput(lastDay);
+
+      customDateRange.start = firstDay;
+      customDateRange.end = lastDay;
+    }
+  } else {
+    customDateRangeEl.classList.add("hidden");
+  }
+
   // Update stats with animation
-  UI.updateStats(allShifts, statsPeriod);
+  UI.updateStats(allShifts, statsPeriod, customDateRange);
+}
+
+function handleCustomDateChange() {
+  const startDateInput = document.getElementById("startDate").value;
+  const endDateInput = document.getElementById("endDate").value;
+
+  customDateRange.start = startDateInput
+    ? new Date(startDateInput + "T00:00:00")
+    : null;
+  customDateRange.end = endDateInput
+    ? new Date(endDateInput + "T23:59:59")
+    : null;
+
+  // Update stats immediately
+  UI.updateStats(allShifts, statsPeriod, customDateRange);
 }
 
 const debouncedSearch = debounce((searchTerm) => {
   UI.renderShifts(allShifts, searchTerm);
 }, 300);
+
+function formatDateForInput(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
@@ -239,6 +283,14 @@ document.addEventListener("DOMContentLoaded", () => {
       handleStatsPeriodToggle(btn.dataset.period);
     });
   });
+
+  // Custom date range listeners
+  document
+    .getElementById("startDate")
+    .addEventListener("change", handleCustomDateChange);
+  document
+    .getElementById("endDate")
+    .addEventListener("change", handleCustomDateChange);
 
   UI.setupTableSorting();
 

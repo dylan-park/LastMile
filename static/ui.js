@@ -17,7 +17,11 @@ const UI = {
     document.getElementById("loadingOverlay").classList.add("hidden");
   },
 
-  updateStats(shifts, period = "month") {
+  updateStats(
+    shifts,
+    period = "month",
+    customRange = { start: null, end: null },
+  ) {
     // Filter shifts based on period
     let filteredShifts = shifts.filter((s) => s.end_time);
 
@@ -27,12 +31,32 @@ const UI = {
       const currentYear = now.getFullYear();
 
       filteredShifts = filteredShifts.filter((shift) => {
-        const shiftDate = new Date(shift.start_time);
+        // Parse UTC timestamp and convert to local timezone
+        const shiftDate = parseUTCToLocal(shift.start_time);
         return (
           shiftDate.getMonth() === currentMonth &&
           shiftDate.getFullYear() === currentYear
         );
       });
+    } else if (period === "custom") {
+      if (customRange.start || customRange.end) {
+        filteredShifts = filteredShifts.filter((shift) => {
+          // Parse UTC timestamp and convert to local timezone
+          const shiftDate = parseUTCToLocal(shift.start_time);
+
+          if (customRange.start && customRange.end) {
+            return (
+              shiftDate >= customRange.start && shiftDate <= customRange.end
+            );
+          } else if (customRange.start) {
+            return shiftDate >= customRange.start;
+          } else if (customRange.end) {
+            return shiftDate <= customRange.end;
+          }
+
+          return true;
+        });
+      }
     }
 
     const totalEarnings = filteredShifts.reduce(
