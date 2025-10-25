@@ -17,22 +17,44 @@ const UI = {
     document.getElementById("loadingOverlay").classList.add("hidden");
   },
 
-  updateStats(shifts) {
-    const completed = shifts.filter((s) => s.end_time);
+  updateStats(shifts, period = "month") {
+    // Filter shifts based on period
+    let filteredShifts = shifts.filter((s) => s.end_time);
 
-    const totalEarnings = completed.reduce(
+    if (period === "month") {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      filteredShifts = filteredShifts.filter((shift) => {
+        const shiftDate = new Date(shift.start_time);
+        return (
+          shiftDate.getMonth() === currentMonth &&
+          shiftDate.getFullYear() === currentYear
+        );
+      });
+    }
+
+    const totalEarnings = filteredShifts.reduce(
       (sum, s) => sum + parseFloat(s.day_total || 0),
       0,
     );
-    const totalHours = completed.reduce(
+    const totalHours = filteredShifts.reduce(
       (sum, s) => sum + parseFloat(s.hours_worked || 0),
       0,
     );
-    const totalMiles = completed.reduce(
+    const totalMiles = filteredShifts.reduce(
       (sum, s) => sum + parseFloat(s.miles_driven || 0),
       0,
     );
     const avgRate = totalHours > 0 ? totalEarnings / totalHours : 0;
+
+    // Add animation class
+    const statValues = document.querySelectorAll(".stat-value");
+    statValues.forEach((el) => {
+      el.classList.add("updating");
+      setTimeout(() => el.classList.remove("updating"), 300);
+    });
 
     document.getElementById("statTotalEarnings").textContent =
       `${formatMoney(totalEarnings)}`;

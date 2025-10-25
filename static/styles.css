@@ -148,6 +148,50 @@ h1 svg {
     color: var(--text-secondary);
 }
 
+/* ===== STATS TOGGLE ===== */
+.stats-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.stats-toggle {
+    display: inline-flex;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-option {
+    padding: 8px 20px;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    border: none;
+    cursor: pointer;
+}
+
+.toggle-option:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.toggle-option.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-option.active:hover {
+    background: var(--accent-dark);
+}
+
 /* ===== STATS GRID ===== */
 .stats-grid {
     display: grid;
@@ -228,6 +272,23 @@ html.dark-mode .miles-icon {
     color: var(--text-primary);
     line-height: 1;
     font-variant-numeric: tabular-nums;
+    transition: all var(--transition-base);
+}
+
+@keyframes statUpdate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.stat-value.updating {
+    animation: statUpdate 0.3s ease;
 }
 
 /* ===== ACTIVE SHIFT BANNER ===== */

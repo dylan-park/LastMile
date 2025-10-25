@@ -1,11 +1,11 @@
-// ===== APP.JS =====
 let activeShift = null;
 let allShifts = [];
+let statsPeriod = "month"; // Default to monthly view
 
 async function loadShifts() {
   try {
     allShifts = await API.getShifts();
-    UI.updateStats(allShifts);
+    UI.updateStats(allShifts, statsPeriod);
     const searchTerm = document.getElementById("searchInput").value;
     UI.renderShifts(allShifts, searchTerm);
   } catch (error) {
@@ -178,6 +178,18 @@ function updateThemeButton() {
   }
 }
 
+function handleStatsPeriodToggle(period) {
+  statsPeriod = period;
+
+  // Update toggle buttons
+  document.querySelectorAll(".toggle-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.period === period);
+  });
+
+  // Update stats with animation
+  UI.updateStats(allShifts, statsPeriod);
+}
+
 const debouncedSearch = debounce((searchTerm) => {
   UI.renderShifts(allShifts, searchTerm);
 }, 300);
@@ -219,6 +231,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") {
       handleStartShift();
     }
+  });
+
+  // Stats period toggle listeners
+  document.querySelectorAll(".toggle-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      handleStatsPeriodToggle(btn.dataset.period);
+    });
   });
 
   UI.setupTableSorting();
