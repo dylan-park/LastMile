@@ -1,5 +1,5 @@
 use crate::error::{AppError, Result};
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 
 pub fn validate_odometer(start: i32, end: i32) -> Result<()> {
     if end < start {
@@ -8,17 +8,17 @@ pub fn validate_odometer(start: i32, end: i32) -> Result<()> {
     Ok(())
 }
 
-pub fn validate_monetary_value(name: &str, value: &BigDecimal) -> Result<()> {
-    if value < &BigDecimal::from(0) {
+pub fn validate_monetary_value(name: &str, value: &Decimal) -> Result<()> {
+    if value < &Decimal::ZERO {
         return Err(AppError::InvalidMonetaryValue(name.to_string()));
     }
     Ok(())
 }
 
 pub fn validate_monetary_values(
-    earnings: &BigDecimal,
-    tips: &BigDecimal,
-    gas_cost: &BigDecimal,
+    earnings: &Decimal,
+    tips: &Decimal,
+    gas_cost: &Decimal,
 ) -> Result<()> {
     validate_monetary_value("earnings", earnings)?;
     validate_monetary_value("tips", tips)?;

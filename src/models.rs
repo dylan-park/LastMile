@@ -1,21 +1,48 @@
-use bigdecimal::BigDecimal;
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use surrealdb::sql::Thing;
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+// Serializes a Thing into a string (e.g., "table:id")
+fn serialize_thing_as_string<S>(thing: &Thing, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // Thing implements Display, converting it to a string
+    serializer.serialize_str(&thing.id.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Shift {
-    pub id: i32,
-    pub start_time: NaiveDateTime,
-    pub end_time: Option<NaiveDateTime>,
-    pub hours_worked: Option<BigDecimal>,
+    #[serde(serialize_with = "serialize_thing_as_string")]
+    pub id: Thing,
+    pub start_time: DateTime<Utc>,
+    pub end_time: Option<DateTime<Utc>>,
+    pub hours_worked: Option<Decimal>,
     pub odometer_start: i32,
     pub odometer_end: Option<i32>,
     pub miles_driven: Option<i32>,
-    pub earnings: BigDecimal,
-    pub tips: BigDecimal,
-    pub gas_cost: BigDecimal,
-    pub day_total: BigDecimal,
-    pub hourly_pay: Option<BigDecimal>,
+    pub earnings: Decimal,
+    pub tips: Decimal,
+    pub gas_cost: Decimal,
+    pub day_total: Decimal,
+    pub hourly_pay: Option<Decimal>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ShiftRecord {
+    pub start_time: surrealdb::sql::Datetime,
+    pub end_time: Option<surrealdb::sql::Datetime>,
+    pub hours_worked: Option<Decimal>,
+    pub odometer_start: i32,
+    pub odometer_end: Option<i32>,
+    pub miles_driven: Option<i32>,
+    pub earnings: Decimal,
+    pub tips: Decimal,
+    pub gas_cost: Decimal,
+    pub day_total: Decimal,
+    pub hourly_pay: Option<Decimal>,
     pub notes: Option<String>,
 }
 
@@ -27,9 +54,9 @@ pub struct StartShiftRequest {
 #[derive(Debug, Deserialize)]
 pub struct EndShiftRequest {
     pub odometer_end: i32,
-    pub earnings: Option<BigDecimal>,
-    pub tips: Option<BigDecimal>,
-    pub gas_cost: Option<BigDecimal>,
+    pub earnings: Option<Decimal>,
+    pub tips: Option<Decimal>,
+    pub gas_cost: Option<Decimal>,
     pub notes: Option<String>,
 }
 
@@ -37,8 +64,8 @@ pub struct EndShiftRequest {
 pub struct UpdateShiftRequest {
     pub odometer_start: Option<i32>,
     pub odometer_end: Option<i32>,
-    pub earnings: Option<BigDecimal>,
-    pub tips: Option<BigDecimal>,
-    pub gas_cost: Option<BigDecimal>,
+    pub earnings: Option<Decimal>,
+    pub tips: Option<Decimal>,
+    pub gas_cost: Option<Decimal>,
     pub notes: Option<String>,
 }

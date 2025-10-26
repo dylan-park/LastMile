@@ -4,23 +4,24 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use bigdecimal::BigDecimal;
 use chrono::Utc;
+use rust_decimal::Decimal;
 use std::sync::Arc;
 use tracing::{info, warn};
 
 use crate::calculations;
 use crate::db::helpers::{get_shift_by_id, has_active_shift};
 use crate::error::{AppError, Result};
-use crate::models::{EndShiftRequest, Shift, StartShiftRequest, UpdateShiftRequest};
+use crate::models::{EndShiftRequest, Shift, ShiftRecord, StartShiftRequest, UpdateShiftRequest};
 use crate::state::AppState;
 use crate::validation;
 
 pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<Vec<Shift>>> {
     info!("Fetching all shifts");
-    let shifts = sqlx::query_as::<_, Shift>("SELECT * FROM shifts ORDER BY start_time DESC")
-        .fetch_all(&state.db)
-        .await?;
+
+    let query = "SELECT * FROM shifts ORDER BY start_time DESC";
+    let mut result = state.db.query(query).await?;
+    let shifts: Vec<Shift> = result.take(0)?;
 
     info!("Retrieved {} shifts", shifts.len());
     Ok(Json(shifts))
@@ -28,11 +29,11 @@ pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<V
 
 pub async fn get_active_shift(State(state): State<Arc<AppState>>) -> Result<Json<Option<Shift>>> {
     info!("Checking for active shift");
-    let shift = sqlx::query_as::<_, Shift>(
-        "SELECT * FROM shifts WHERE end_time IS NULL ORDER BY start_time DESC LIMIT 1",
-    )
-    .fetch_optional(&state.db)
-    .await?;
+
+    let query = "SELECT * FROM shifts WHERE end_time = NONE ORDER BY start_time DESC LIMIT 1";
+    let mut result = state.db.query(query).await?;
+    let shifts: Vec<Shift> = result.take(0)?;
+    let shift = shifts.into_iter().next();
 
     if shift.is_some() {
         info!("Active shift found");
@@ -52,105 +53,87 @@ pub async fn start_shift(
         payload.odometer_start
     );
 
-    // Use transaction to prevent race condition
-    let mut tx = state.db.begin().await?;
-
-    // Check for active shift with row lock
-    if has_active_shift(&mut tx).await? {
+    // Check for active shift
+    if has_active_shift(&state.db).await? {
         warn!("Attempted to start shift while one is already active");
         return Err(AppError::ActiveShiftExists);
     }
 
     let now = Utc::now();
 
-    let result = sqlx::query(
-        r#"
-        INSERT INTO shifts (start_time, odometer_start, earnings, tips, gas_cost, day_total)
-        VALUES (?, ?, 0.00, 0.00, 0.00, 0.00)
-        "#,
-    )
-    .bind(now)
-    .bind(payload.odometer_start)
-    .execute(&mut *tx)
-    .await?;
+    let record = ShiftRecord {
+        start_time: now.into(),
+        end_time: None,
+        hours_worked: None,
+        odometer_start: payload.odometer_start,
+        odometer_end: None,
+        miles_driven: None,
+        earnings: Decimal::ZERO,
+        tips: Decimal::ZERO,
+        gas_cost: Decimal::ZERO,
+        day_total: Decimal::ZERO,
+        hourly_pay: None,
+        notes: None,
+    };
 
-    let shift = sqlx::query_as::<_, Shift>("SELECT * FROM shifts WHERE id = ?")
-        .bind(result.last_insert_id() as i32)
-        .fetch_one(&mut *tx)
-        .await?;
+    // Create returns Option<T>
+    let shift: Option<Shift> = state.db.create("shifts").content(record).await?;
+    let shift = shift.ok_or_else(|| {
+        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
+            "Failed to create shift".to_string(),
+        )))
+    })?;
 
-    tx.commit().await?;
-
-    info!("Shift started successfully: id={}", shift.id);
+    info!("Shift started successfully: id={:?}", shift.id);
     Ok(Json(shift))
 }
 
 pub async fn end_shift(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<i32>,
+    Path(id): Path<String>,
     Json(payload): Json<EndShiftRequest>,
 ) -> Result<Json<Shift>> {
     info!("Ending shift: id={}", id);
 
-    let shift = get_shift_by_id(&state.db, id).await?;
+    let shift = get_shift_by_id(&state.db, &id).await?;
 
     // Validate inputs
     validation::validate_odometer(shift.odometer_start, payload.odometer_end)?;
 
-    let earnings = payload.earnings.unwrap_or_else(|| BigDecimal::from(0));
-    let tips = payload.tips.unwrap_or_else(|| BigDecimal::from(0));
-    let gas_cost = payload.gas_cost.unwrap_or_else(|| BigDecimal::from(0));
+    let earnings = payload.earnings.unwrap_or(Decimal::ZERO);
+    let tips = payload.tips.unwrap_or(Decimal::ZERO);
+    let gas_cost = payload.gas_cost.unwrap_or(Decimal::ZERO);
 
     validation::validate_monetary_values(&earnings, &tips, &gas_cost)?;
 
     let notes = validation::sanitize_notes(payload.notes);
 
     // Calculate derived fields
-    let now = Utc::now().naive_utc();
+    let now = Utc::now();
     let miles_driven = calculations::calculate_miles(shift.odometer_start, payload.odometer_end);
     let hours_worked = calculations::calculate_hours(shift.start_time, now);
     let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
     let hourly_pay = calculations::calculate_hourly_pay(&day_total, &hours_worked);
 
-    // Use transaction for consistency
-    let mut tx = state.db.begin().await?;
-
-    sqlx::query(
-        r#"
-        UPDATE shifts
-        SET end_time = ?,
-            odometer_end = ?,
-            miles_driven = ?,
-            hours_worked = ?,
-            earnings = ?,
-            tips = ?,
-            gas_cost = ?,
-            day_total = ?,
-            hourly_pay = ?,
-            notes = ?
-        WHERE id = ?
-        "#,
-    )
-    .bind(now)
-    .bind(payload.odometer_end)
-    .bind(miles_driven)
-    .bind(&hours_worked)
-    .bind(&earnings)
-    .bind(&tips)
-    .bind(&gas_cost)
-    .bind(&day_total)
-    .bind(&hourly_pay)
-    .bind(&notes)
-    .bind(id)
-    .execute(&mut *tx)
-    .await?;
-
-    let updated_shift = sqlx::query_as::<_, Shift>("SELECT * FROM shifts WHERE id = ?")
-        .bind(id)
-        .fetch_one(&mut *tx)
+    // Update the shift - returns Option<T> when using record ID
+    let updated_shift: Option<Shift> = state
+        .db
+        .update(("shifts", id.as_str()))
+        .merge(serde_json::json!({
+            "end_time": surrealdb::sql::Datetime::from(now),
+            "odometer_end": payload.odometer_end,
+            "miles_driven": miles_driven,
+            "hours_worked": hours_worked,
+            "earnings": earnings,
+            "tips": tips,
+            "gas_cost": gas_cost,
+            "day_total": day_total,
+            "hourly_pay": hourly_pay,
+            "notes": notes,
+        }))
         .await?;
 
-    tx.commit().await?;
+    let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
     info!(
         "Shift ended successfully: id={}, hours={}, miles={}",
@@ -161,12 +144,12 @@ pub async fn end_shift(
 
 pub async fn update_shift(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<i32>,
+    Path(id): Path<String>,
     Json(payload): Json<UpdateShiftRequest>,
 ) -> Result<Json<Shift>> {
     info!("Updating shift: id={}", id);
 
-    let shift = get_shift_by_id(&state.db, id).await?;
+    let shift = get_shift_by_id(&state.db, &id).await?;
 
     // Merge updates with existing values
     let odometer_start = payload.odometer_start.unwrap_or(shift.odometer_start);
@@ -191,11 +174,9 @@ pub async fn update_shift(
     // Recalculate derived fields
     let miles_driven = odometer_end.map(|end| calculations::calculate_miles(odometer_start, end));
 
-    let hours_worked = if let Some(end_time) = shift.end_time {
-        Some(calculations::calculate_hours(shift.start_time, end_time))
-    } else {
-        None
-    };
+    let hours_worked = shift
+        .end_time
+        .map(|end_time| calculations::calculate_hours(shift.start_time, end_time));
 
     let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
 
@@ -203,45 +184,25 @@ pub async fn update_shift(
         .as_ref()
         .and_then(|hw| calculations::calculate_hourly_pay(&day_total, hw));
 
-    // Use transaction for consistency
-    let mut tx = state.db.begin().await?;
-
-    sqlx::query(
-        r#"
-        UPDATE shifts
-        SET odometer_start = ?,
-            odometer_end = ?,
-            miles_driven = ?,
-            hours_worked = ?,
-            earnings = ?,
-            tips = ?,
-            gas_cost = ?,
-            day_total = ?,
-            hourly_pay = ?,
-            notes = ?
-        WHERE id = ?
-        "#,
-    )
-    .bind(odometer_start)
-    .bind(odometer_end)
-    .bind(miles_driven)
-    .bind(&hours_worked)
-    .bind(&earnings)
-    .bind(&tips)
-    .bind(&gas_cost)
-    .bind(&day_total)
-    .bind(&hourly_pay)
-    .bind(&notes)
-    .bind(id)
-    .execute(&mut *tx)
-    .await?;
-
-    let updated_shift = sqlx::query_as::<_, Shift>("SELECT * FROM shifts WHERE id = ?")
-        .bind(id)
-        .fetch_one(&mut *tx)
+    // Update the shift - returns Option<T> when using record ID
+    let updated_shift: Option<Shift> = state
+        .db
+        .update(("shifts", id.as_str()))
+        .merge(serde_json::json!({
+            "odometer_start": odometer_start,
+            "odometer_end": odometer_end,
+            "miles_driven": miles_driven,
+            "hours_worked": hours_worked,
+            "earnings": earnings,
+            "tips": tips,
+            "gas_cost": gas_cost,
+            "day_total": day_total,
+            "hourly_pay": hourly_pay,
+            "notes": notes,
+        }))
         .await?;
 
-    tx.commit().await?;
+    let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
     info!("Shift updated successfully: id={}", id);
     Ok(Json(updated_shift))
@@ -249,18 +210,22 @@ pub async fn update_shift(
 
 pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse> {
     info!("Exporting shifts to CSV");
-    let shifts = sqlx::query_as::<_, Shift>("SELECT * FROM shifts ORDER BY start_time ASC")
-        .fetch_all(&state.db)
-        .await?;
+
+    let query = "SELECT * FROM shifts ORDER BY start_time ASC";
+    let mut result = state.db.query(query).await?;
+    let shifts: Vec<Shift> = result.take(0)?;
 
     let mut csv = String::from(
         "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
     );
 
     for shift in &shifts {
+        // Extract numeric ID from Thing
+        let id_str = shift.id.id.to_string();
+
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
-            shift.id,
+            id_str,
             shift.start_time.format("%Y-%m-%d %H:%M:%S"),
             shift
                 .end_time

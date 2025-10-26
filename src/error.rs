@@ -5,7 +5,7 @@ use tracing::error;
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(#[from] surrealdb::Error),
 
     #[error("Shift not found")]
     ShiftNotFound,
@@ -20,6 +20,9 @@ pub enum AppError {
 
     #[error("Invalid monetary value: {0} must be non-negative")]
     InvalidMonetaryValue(String),
+
+    #[error("Invalid shift ID format")]
+    InvalidShiftId,
 }
 
 impl IntoResponse for AppError {
@@ -36,6 +39,7 @@ impl IntoResponse for AppError {
             AppError::ActiveShiftExists => (StatusCode::CONFLICT, self.to_string()),
             AppError::InvalidOdometer { .. } => (StatusCode::BAD_REQUEST, self.to_string()),
             AppError::InvalidMonetaryValue(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            AppError::InvalidShiftId => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 
         (status, Json(serde_json::json!({ "error": message }))).into_response()
