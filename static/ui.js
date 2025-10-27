@@ -166,7 +166,7 @@ const UI = {
     if (filtered.length === 0) {
       tbody.innerHTML = `
                 <tr class="empty-state">
-                    <td colspan="13">
+                    <td colspan="12">
                         <div class="empty-content">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -187,7 +187,6 @@ const UI = {
       .map(
         (shift) => `
             <tr data-shift-id="${shift.id}">
-                <td>${shift.id}</td>
                 <td>${formatDateTime(shift.start_time)}</td>
                 <td>${formatDateTime(shift.end_time)}</td>
                 <td class="calculated">${formatHours(shift.hours_worked)}</td>
