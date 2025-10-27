@@ -46,6 +46,32 @@ pub struct ShiftRecord {
     pub notes: Option<String>,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct ShiftUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_time: Option<surrealdb::sql::Datetime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub odometer_start: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub odometer_end: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub miles_driven: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hours_worked: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub earnings: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tips: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_cost: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub day_total: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hourly_pay: Option<Decimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct StartShiftRequest {
     pub odometer_start: i32,

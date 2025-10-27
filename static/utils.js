@@ -4,7 +4,10 @@ function formatDateTime(utcDateString) {
   if (!utcDateString) return "";
 
   try {
-    const date = new Date(utcDateString + "Z");
+    // Handle SurrealDB datetime format which already includes 'Z'
+    // Format: 2025-10-27T01:11:47.739709100Z
+    const date = new Date(utcDateString);
+
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "2-digit",
@@ -13,6 +16,7 @@ function formatDateTime(utcDateString) {
       minute: "2-digit",
       second: "2-digit",
       timeZone: USER_TIMEZONE,
+      hour12: true,
     }).format(date);
   } catch (error) {
     console.error("Error formatting date:", error);
@@ -24,8 +28,8 @@ function parseUTCToLocal(utcDateString) {
   if (!utcDateString) return null;
 
   try {
-    // Add 'Z' to indicate UTC, then convert to local Date object
-    const utcDate = new Date(utcDateString + "Z");
+    // SurrealDB datetime already includes 'Z', so parse directly
+    const utcDate = new Date(utcDateString);
 
     // Convert to local timezone string, then parse back to get local Date
     const localString = new Intl.DateTimeFormat("en-US", {

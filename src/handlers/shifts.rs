@@ -12,7 +12,9 @@ use tracing::{info, warn};
 use crate::calculations;
 use crate::db::helpers::{get_shift_by_id, has_active_shift};
 use crate::error::{AppError, Result};
-use crate::models::{EndShiftRequest, Shift, ShiftRecord, StartShiftRequest, UpdateShiftRequest};
+use crate::models::{
+    EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest, UpdateShiftRequest,
+};
 use crate::state::AppState;
 use crate::validation;
 
@@ -115,22 +117,26 @@ pub async fn end_shift(
     let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
     let hourly_pay = calculations::calculate_hourly_pay(&day_total, &hours_worked);
 
+    // Create update struct with proper SurrealDB types
+    let update = ShiftUpdate {
+        end_time: Some(now.into()),
+        odometer_start: None,
+        odometer_end: Some(payload.odometer_end),
+        miles_driven: Some(miles_driven),
+        hours_worked: Some(hours_worked),
+        earnings: Some(earnings),
+        tips: Some(tips),
+        gas_cost: Some(gas_cost),
+        day_total: Some(day_total),
+        hourly_pay,
+        notes,
+    };
+
     // Update the shift - returns Option<T> when using record ID
     let updated_shift: Option<Shift> = state
         .db
         .update(("shifts", id.as_str()))
-        .merge(serde_json::json!({
-            "end_time": surrealdb::sql::Datetime::from(now),
-            "odometer_end": payload.odometer_end,
-            "miles_driven": miles_driven,
-            "hours_worked": hours_worked,
-            "earnings": earnings,
-            "tips": tips,
-            "gas_cost": gas_cost,
-            "day_total": day_total,
-            "hourly_pay": hourly_pay,
-            "notes": notes,
-        }))
+        .merge(update)
         .await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
@@ -184,22 +190,26 @@ pub async fn update_shift(
         .as_ref()
         .and_then(|hw| calculations::calculate_hourly_pay(&day_total, hw));
 
+    // Create update struct with proper SurrealDB types
+    let update = ShiftUpdate {
+        end_time: None, // Don't change end_time in update
+        odometer_start: Some(odometer_start),
+        odometer_end,
+        miles_driven,
+        hours_worked,
+        earnings: Some(earnings),
+        tips: Some(tips),
+        gas_cost: Some(gas_cost),
+        day_total: Some(day_total),
+        hourly_pay,
+        notes,
+    };
+
     // Update the shift - returns Option<T> when using record ID
     let updated_shift: Option<Shift> = state
         .db
         .update(("shifts", id.as_str()))
-        .merge(serde_json::json!({
-            "odometer_start": odometer_start,
-            "odometer_end": odometer_end,
-            "miles_driven": miles_driven,
-            "hours_worked": hours_worked,
-            "earnings": earnings,
-            "tips": tips,
-            "gas_cost": gas_cost,
-            "day_total": day_total,
-            "hourly_pay": hourly_pay,
-            "notes": notes,
-        }))
+        .merge(update)
         .await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
