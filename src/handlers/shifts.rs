@@ -163,10 +163,12 @@ pub async fn update_shift(
     let earnings = payload.earnings.unwrap_or(shift.earnings);
     let tips = payload.tips.unwrap_or(shift.tips);
     let gas_cost = payload.gas_cost.unwrap_or(shift.gas_cost);
-    let notes = if payload.notes.is_some() {
-        validation::sanitize_notes(payload.notes)
-    } else {
-        shift.notes
+
+    // Handle notes: if payload.notes is Some, it means the field was included in the request
+    // The inner Option tells us if it should be Some(value) or None (cleared)
+    let notes = match payload.notes {
+        Some(inner) => validation::sanitize_notes(inner),
+        None => shift.notes, // Field wasn't included, keep existing value
     };
 
     // Validate monetary values

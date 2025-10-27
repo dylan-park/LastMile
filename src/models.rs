@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
 use surrealdb::sql::Thing;
+
 fn serialize_thing_as_string<S>(thing: &Thing, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -65,7 +66,7 @@ pub struct ShiftUpdate {
     pub day_total: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hourly_pay: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // Don't skip serializing notes - we want to allow explicitly setting it to None
     pub notes: Option<String>,
 }
 
@@ -90,5 +91,14 @@ pub struct UpdateShiftRequest {
     pub earnings: Option<Decimal>,
     pub tips: Option<Decimal>,
     pub gas_cost: Option<Decimal>,
-    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_field")]
+    pub notes: Option<Option<String>>,
+}
+
+fn deserialize_optional_field<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    Ok(Some(Option::<String>::deserialize(deserializer)?))
 }

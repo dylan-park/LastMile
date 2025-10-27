@@ -61,7 +61,8 @@ async function handleEndShift() {
   const earnings = parseFloat(document.getElementById("earnings").value) || 0;
   const tips = parseFloat(document.getElementById("tips").value) || 0;
   const gasCost = parseFloat(document.getElementById("gasCost").value) || 0;
-  const notes = document.getElementById("notes").value.trim() || null;
+  const notesValue = document.getElementById("notes").value.trim();
+  const notes = notesValue.length === 0 ? null : notesValue;
 
   try {
     UI.showLoading();
@@ -94,7 +95,8 @@ async function handleCellEdit(e) {
   } else if (["earnings", "tips", "gas_cost"].includes(field)) {
     value = value ? parseFloat(value) : 0;
   } else if (field === "notes") {
-    value = value.length === 0 ? "" : value;
+    // Explicitly handle empty notes - send null instead of empty string
+    value = value.length === 0 ? null : value;
   }
 
   try {

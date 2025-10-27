@@ -39,10 +39,27 @@ const API = {
   },
 
   async updateShift(shiftId, data) {
+    // Sanitize the data before sending
+    const sanitizedData = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (key === "notes") {
+        // For notes, explicitly send null if empty, or the trimmed value
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          sanitizedData[key] = trimmed.length === 0 ? null : trimmed;
+        } else {
+          sanitizedData[key] = value;
+        }
+      } else {
+        sanitizedData[key] = value;
+      }
+    }
+
     const response = await fetch(`${API_URL}/shifts/${shiftId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(sanitizedData),
     });
     if (!response.ok) throw new Error("Failed to update shift");
     return await response.json();
