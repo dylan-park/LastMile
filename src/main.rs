@@ -8,6 +8,7 @@ use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::local::{Db, RocksDb};
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::ServeDir;
 use tracing::info;
 
 mod calculations;
@@ -79,14 +80,17 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
+        // API routes
         .route("/api/shifts", get(get_all_shifts))
         .route("/api/shifts/active", get(get_active_shift))
         .route("/api/shifts/start", post(start_shift))
         .route("/api/shifts/{id}/end", post(end_shift))
         .route("/api/shifts/{id}", put(update_shift))
         .route("/api/shifts/export", get(export_csv))
+        .with_state(state)
         .layer(cors)
-        .with_state(state);
+        // Serve static files from ./static directory as fallback
+        .fallback_service(ServeDir::new("static"));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 

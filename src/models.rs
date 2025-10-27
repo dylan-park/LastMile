@@ -1,14 +1,11 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use surrealdb::sql::Thing;
-
-// Serializes a Thing into a string (e.g., "table:id")
 fn serialize_thing_as_string<S>(thing: &Thing, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    // Thing implements Display, converting it to a string
     serializer.serialize_str(&thing.id.to_string())
 }
 
