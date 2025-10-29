@@ -70,10 +70,10 @@ pub async fn start_shift(
         odometer_start: payload.odometer_start,
         odometer_end: None,
         miles_driven: None,
-        earnings: Decimal::ZERO,
-        tips: Decimal::ZERO,
-        gas_cost: Decimal::ZERO,
-        day_total: Decimal::ZERO,
+        earnings: calculations::normalize_decimal(Decimal::ZERO),
+        tips: calculations::normalize_decimal(Decimal::ZERO),
+        gas_cost: calculations::normalize_decimal(Decimal::ZERO),
+        day_total: calculations::normalize_decimal(Decimal::ZERO),
         hourly_pay: None,
         notes: None,
     };
@@ -102,9 +102,9 @@ pub async fn end_shift(
     // Validate inputs
     validation::validate_odometer(shift.odometer_start, payload.odometer_end)?;
 
-    let earnings = payload.earnings.unwrap_or(Decimal::ZERO);
-    let tips = payload.tips.unwrap_or(Decimal::ZERO);
-    let gas_cost = payload.gas_cost.unwrap_or(Decimal::ZERO);
+    let earnings = calculations::normalize_decimal(payload.earnings.unwrap_or(Decimal::ZERO));
+    let tips = calculations::normalize_decimal(payload.tips.unwrap_or(Decimal::ZERO));
+    let gas_cost = calculations::normalize_decimal(payload.gas_cost.unwrap_or(Decimal::ZERO));
 
     validation::validate_monetary_values(&earnings, &tips, &gas_cost)?;
 
@@ -160,9 +160,9 @@ pub async fn update_shift(
     // Merge updates with existing values
     let odometer_start = payload.odometer_start.unwrap_or(shift.odometer_start);
     let odometer_end = payload.odometer_end.or(shift.odometer_end);
-    let earnings = payload.earnings.unwrap_or(shift.earnings);
-    let tips = payload.tips.unwrap_or(shift.tips);
-    let gas_cost = payload.gas_cost.unwrap_or(shift.gas_cost);
+    let earnings = calculations::normalize_decimal(payload.earnings.unwrap_or(shift.earnings));
+    let tips = calculations::normalize_decimal(payload.tips.unwrap_or(shift.tips));
+    let gas_cost = calculations::normalize_decimal(payload.gas_cost.unwrap_or(shift.gas_cost));
 
     // Handle notes: if payload.notes is Some, it means the field was included in the request
     // The inner Option tells us if it should be Some(value) or None (cleared)
