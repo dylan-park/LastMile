@@ -1,5 +1,6 @@
 use crate::handlers::shifts::{
-    end_shift, export_csv, get_active_shift, get_all_shifts, start_shift, update_shift,
+    end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range, start_shift,
+    update_shift,
 };
 use crate::state::AppState;
 use axum::Router;
@@ -82,6 +83,7 @@ async fn main() {
     let app = Router::new()
         // API routes
         .route("/api/shifts", get(get_all_shifts))
+        .route("/api/shifts/range", get(get_shifts_by_range))
         .route("/api/shifts/active", get(get_active_shift))
         .route("/api/shifts/start", post(start_shift))
         .route("/api/shifts/{id}/end", post(end_shift))

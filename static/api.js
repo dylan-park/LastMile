@@ -7,6 +7,16 @@ const API = {
     return await response.json();
   },
 
+  async getShiftsByRange(startUTC, endUTC) {
+    const params = new URLSearchParams({
+      start: startUTC,
+      end: endUTC,
+    });
+    const response = await fetch(`${API_URL}/shifts/range?${params}`);
+    if (!response.ok) throw new Error("Failed to fetch shifts by range");
+    return await response.json();
+  },
+
   async getActiveShift() {
     const response = await fetch(`${API_URL}/shifts/active`);
     if (!response.ok) throw new Error("Failed to fetch active shift");

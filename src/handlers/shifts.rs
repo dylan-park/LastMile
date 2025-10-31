@@ -1,10 +1,10 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use tracing::{info, warn};
@@ -13,7 +13,8 @@ use crate::calculations;
 use crate::db::helpers::{get_shift_by_id, has_active_shift};
 use crate::error::{AppError, Result};
 use crate::models::{
-    EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest, UpdateShiftRequest,
+    DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
+    UpdateShiftRequest,
 };
 use crate::state::AppState;
 use crate::validation;
@@ -26,6 +27,49 @@ pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<V
     let shifts: Vec<Shift> = result.take(0)?;
 
     info!("Retrieved {} shifts", shifts.len());
+    Ok(Json(shifts))
+}
+
+pub async fn get_shifts_by_range(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<DateRangeQuery>,
+) -> Result<Json<Vec<Shift>>> {
+    info!(
+        "Fetching shifts in range: {} to {}",
+        params.start, params.end
+    );
+
+    // Parse the ISO 8601 datetime strings
+    let start_time: DateTime<Utc> = params.start.parse().map_err(|e| {
+        warn!("Invalid start date format: {}", e);
+        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
+            "Invalid start date format".to_string(),
+        )))
+    })?;
+
+    let end_time: DateTime<Utc> = params.end.parse().map_err(|e| {
+        warn!("Invalid end date format: {}", e);
+        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
+            "Invalid end date format".to_string(),
+        )))
+    })?;
+
+    // Convert to SurrealDB datetime for query
+    let start_surreal: surrealdb::sql::Datetime = start_time.into();
+    let end_surreal: surrealdb::sql::Datetime = end_time.into();
+
+    // Query shifts within the date range
+    let query = "SELECT * FROM shifts WHERE start_time >= $start AND start_time <= $end ORDER BY start_time DESC";
+    let mut result = state
+        .db
+        .query(query)
+        .bind(("start", start_surreal))
+        .bind(("end", end_surreal))
+        .await?;
+
+    let shifts: Vec<Shift> = result.take(0)?;
+
+    info!("Retrieved {} shifts in range", shifts.len());
     Ok(Json(shifts))
 }
 

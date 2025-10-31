@@ -144,6 +144,12 @@ pub struct UpdateShiftRequest {
     pub notes: Option<Option<String>>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DateRangeQuery {
+    pub start: String,
+    pub end: String,
+}
+
 fn deserialize_optional_field<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
 where
     D: serde::Deserializer<'de>,
