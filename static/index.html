@@ -121,11 +121,11 @@
                 <div class="custom-date-range hidden" id="customDateRange">
                     <div class="date-input-group">
                         <label for="startDate">From</label>
-                        <input type="date" id="startDate" />
+                        <input type="date" id="startDate" autocomplete="off" />
                     </div>
                     <div class="date-input-group">
                         <label for="endDate">To</label>
-                        <input type="date" id="endDate" />
+                        <input type="date" id="endDate" autocomplete="off" />
                     </div>
                 </div>
             </div>
@@ -250,6 +250,7 @@
                         placeholder="Starting Odometer"
                         min="0"
                         class="odo-input"
+                        autocomplete="off"
                     />
                     <button class="btn-primary" id="startShiftBtn">
                         <svg
@@ -283,6 +284,7 @@
                             type="text"
                             id="searchInput"
                             placeholder="Search shifts..."
+                            autocomplete="off"
                         />
                     </div>
                     <button class="btn-export" id="exportBtn">
@@ -415,7 +417,13 @@
                             >Ending Odometer
                             <span class="required">*</span></label
                         >
-                        <input type="number" id="endOdo" min="0" required />
+                        <input
+                            type="number"
+                            id="endOdo"
+                            min="0"
+                            required
+                            autocomplete="off"
+                        />
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -428,6 +436,7 @@
                                     step="0.01"
                                     min="0"
                                     value="0"
+                                    autocomplete="off"
                                 />
                             </div>
                         </div>
@@ -441,6 +450,7 @@
                                     step="0.01"
                                     min="0"
                                     value="0"
+                                    autocomplete="off"
                                 />
                             </div>
                         </div>
@@ -455,6 +465,7 @@
                                 step="0.01"
                                 min="0"
                                 value="0"
+                                autocomplete="off"
                             />
                         </div>
                     </div>
@@ -464,6 +475,7 @@
                             id="notes"
                             placeholder="Optional notes about this shift..."
                             rows="3"
+                            autocomplete="off"
                         ></textarea>
                     </div>
                 </div>
