@@ -1,0 +1,60 @@
+# docker exec -it uber-eats-tracker-db mariadb -u root -p uber_eats_tracker
+
+networks:
+  uber-eats-tracker-network:
+    name: uber-eats-tracker-network
+    driver: bridge
+
+services:
+  mariadb:
+    container_name: uber-eats-tracker-db
+    hostname: mariadb
+    image: mariadb:11
+    networks:
+      - uber-eats-tracker-network
+    restart: unless-stopped
+    command: --default-time-zone='+00:00'
+    environment:
+      MYSQL_ROOT_PASSWORD: jg6DRQyRFjkY
+      MYSQL_DATABASE: uber_eats_tracker
+      MYSQL_USER: uber_eats
+      MYSQL_PASSWORD: prqSjx9tMsPH
+      TZ: "America/Chicago"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  uber-eats-tracker:
+    build: .
+    container_name: uber-eats-tracker-api
+    hostname: uber-eats-tracker-api
+    networks:
+      - uber-eats-tracker-network
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=mysql://uber_eats:prqSjx9tMsPH@mariadb/uber_eats_tracker
+      - TZ=America/Chicago
+    ports:
+      - "8031:3000"
+    depends_on:
+      - mariadb
+
+  nginx:
+    container_name: uber-eats-tracker-web
+    hostname: uber-eats-tracker-web
+    image: nginx:alpine
+    networks:
+      - uber-eats-tracker-network
+    restart: unless-stopped
+    ports:
+      - "8030:80"
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - ./static:/usr/share/nginx/html:ro
+    depends_on:
+      - mariadb
+      - uber-eats-tracker
+
+volumes:
+  mariadb_data:
+    name: uber-eats-tracker-mariadb_data
