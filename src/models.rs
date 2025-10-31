@@ -15,8 +15,6 @@ fn deserialize_flexible_decimal<'de, D>(deserializer: D) -> Result<Decimal, D::E
 where
     D: Deserializer<'de>,
 {
-    use serde::de::Error;
-
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum FlexibleDecimal {
@@ -25,7 +23,7 @@ where
     }
 
     match FlexibleDecimal::deserialize(deserializer)? {
-        FlexibleDecimal::Int(i) => Decimal::try_from(i).map_err(D::Error::custom),
+        FlexibleDecimal::Int(i) => Ok(Decimal::from(i)),
         FlexibleDecimal::Decimal(d) => Ok(d),
     }
 }
@@ -36,8 +34,6 @@ fn deserialize_optional_flexible_decimal<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    use serde::de::Error;
-
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum FlexibleDecimal {
@@ -47,7 +43,7 @@ where
 
     let opt: Option<FlexibleDecimal> = Option::deserialize(deserializer)?;
     match opt {
-        Some(FlexibleDecimal::Int(i)) => Decimal::try_from(i).map(Some).map_err(D::Error::custom),
+        Some(FlexibleDecimal::Int(i)) => Ok(Some(Decimal::from(i))),
         Some(FlexibleDecimal::Decimal(d)) => Ok(Some(d)),
         None => Ok(None),
     }

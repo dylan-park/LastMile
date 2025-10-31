@@ -32,7 +32,7 @@ async fn main() {
     // Get configuration from environment or use defaults
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "./data".to_string());
     let surreal_user = std::env::var("SURREAL_USER").unwrap_or_else(|_| "root".to_string());
-    let surreal_pass = std::env::var("SURREAL_PASS").unwrap_or_else(|_| "root".to_string());
+    // let surreal_pass = std::env::var("SURREAL_PASS").unwrap_or_else(|_| "root".to_string());
     let surreal_bind = std::env::var("SURREAL_BIND").unwrap_or_else(|_| "0.0.0.0:8000".to_string());
 
     info!("Initializing SurrealDB at {}", db_path);
@@ -62,7 +62,6 @@ async fn main() {
     db::setup_database(&db).await;
 
     // Start SurrealDB server for remote access
-    let db_clone = db.clone();
     let bind_addr = surreal_bind.clone();
     tokio::spawn(async move {
         info!("Starting SurrealDB server on {}", bind_addr);

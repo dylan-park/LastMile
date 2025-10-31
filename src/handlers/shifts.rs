@@ -23,8 +23,8 @@ pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<V
     info!("Fetching all shifts");
 
     let query = "SELECT * FROM shifts ORDER BY start_time DESC";
-    let mut result = state.db.query(query).await?;
-    let shifts: Vec<Shift> = result.take(0)?;
+    let mut result = state.db.query(query).await.map_err(Box::new)?;
+    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
 
     info!("Retrieved {} shifts", shifts.len());
     Ok(Json(shifts))
@@ -42,15 +42,15 @@ pub async fn get_shifts_by_range(
     // Parse the ISO 8601 datetime strings
     let start_time: DateTime<Utc> = params.start.parse().map_err(|e| {
         warn!("Invalid start date format: {}", e);
-        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
-            "Invalid start date format".to_string(),
+        AppError::Database(Box::new(surrealdb::Error::Api(
+            surrealdb::error::Api::Query("Invalid start date format".to_string()),
         )))
     })?;
 
     let end_time: DateTime<Utc> = params.end.parse().map_err(|e| {
         warn!("Invalid end date format: {}", e);
-        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
-            "Invalid end date format".to_string(),
+        AppError::Database(Box::new(surrealdb::Error::Api(
+            surrealdb::error::Api::Query("Invalid end date format".to_string()),
         )))
     })?;
 
@@ -65,9 +65,10 @@ pub async fn get_shifts_by_range(
         .query(query)
         .bind(("start", start_surreal))
         .bind(("end", end_surreal))
-        .await?;
+        .await
+        .map_err(Box::new)?;
 
-    let shifts: Vec<Shift> = result.take(0)?;
+    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
 
     info!("Retrieved {} shifts in range", shifts.len());
     Ok(Json(shifts))
@@ -77,8 +78,8 @@ pub async fn get_active_shift(State(state): State<Arc<AppState>>) -> Result<Json
     info!("Checking for active shift");
 
     let query = "SELECT * FROM shifts WHERE end_time = NONE ORDER BY start_time DESC LIMIT 1";
-    let mut result = state.db.query(query).await?;
-    let shifts: Vec<Shift> = result.take(0)?;
+    let mut result = state.db.query(query).await.map_err(Box::new)?;
+    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
     let shift = shifts.into_iter().next();
 
     if shift.is_some() {
@@ -123,10 +124,15 @@ pub async fn start_shift(
     };
 
     // Create returns Option<T>
-    let shift: Option<Shift> = state.db.create("shifts").content(record).await?;
+    let shift: Option<Shift> = state
+        .db
+        .create("shifts")
+        .content(record)
+        .await
+        .map_err(Box::new)?;
     let shift = shift.ok_or_else(|| {
-        AppError::Database(surrealdb::Error::Api(surrealdb::error::Api::Query(
-            "Failed to create shift".to_string(),
+        AppError::Database(Box::new(surrealdb::Error::Api(
+            surrealdb::error::Api::Query("Failed to create shift".to_string()),
         )))
     })?;
 
@@ -181,7 +187,8 @@ pub async fn end_shift(
         .db
         .update(("shifts", id.as_str()))
         .merge(update)
-        .await?;
+        .await
+        .map_err(Box::new)?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -256,7 +263,8 @@ pub async fn update_shift(
         .db
         .update(("shifts", id.as_str()))
         .merge(update)
-        .await?;
+        .await
+        .map_err(Box::new)?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -268,8 +276,8 @@ pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoR
     info!("Exporting shifts to CSV");
 
     let query = "SELECT * FROM shifts ORDER BY start_time ASC";
-    let mut result = state.db.query(query).await?;
-    let shifts: Vec<Shift> = result.take(0)?;
+    let mut result = state.db.query(query).await.map_err(Box::new)?;
+    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
 
     let mut csv = String::from(
         "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
