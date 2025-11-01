@@ -1,7 +1,6 @@
 pub mod helpers;
 
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::info;
 
 pub async fn setup_database(db: &Surreal<Db>) {

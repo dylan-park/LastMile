@@ -1,7 +1,8 @@
-use crate::error::{AppError, Result};
-use crate::models::Shift;
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
+use crate::{
+    error::{AppError, Result},
+    models::Shift,
+};
+use surrealdb::{Surreal, engine::local::Db};
 
 pub async fn has_active_shift(db: &Surreal<Db>) -> Result<bool> {
     let query = "SELECT * FROM shifts WHERE end_time = NONE LIMIT 1";

@@ -1,3 +1,14 @@
+use crate::{
+    calculations,
+    db::helpers::{get_shift_by_id, has_active_shift},
+    error::{AppError, Result},
+    models::{
+        DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
+        UpdateShiftRequest,
+    },
+    state::AppState,
+    validation,
+};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -8,16 +19,6 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use tracing::{info, warn};
-
-use crate::calculations;
-use crate::db::helpers::{get_shift_by_id, has_active_shift};
-use crate::error::{AppError, Result};
-use crate::models::{
-    DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
-    UpdateShiftRequest,
-};
-use crate::state::AppState;
-use crate::validation;
 
 pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<Vec<Shift>>> {
     info!("Fetching all shifts");

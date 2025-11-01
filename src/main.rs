@@ -1,15 +1,23 @@
-use crate::handlers::shifts::{
-    end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range, start_shift,
-    update_shift,
+use crate::{
+    handlers::shifts::{
+        end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range, start_shift,
+        update_shift,
+    },
+    state::AppState,
 };
-use crate::state::AppState;
-use axum::Router;
-use axum::routing::{get, post, put};
+use axum::{
+    Router,
+    routing::{get, post, put},
+};
 use std::sync::Arc;
-use surrealdb::Surreal;
-use surrealdb::engine::local::{Db, RocksDb};
-use tower_http::cors::{Any, CorsLayer};
-use tower_http::services::ServeDir;
+use surrealdb::{
+    Surreal,
+    engine::local::{Db, RocksDb},
+};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    services::ServeDir,
+};
 use tracing::info;
 
 mod calculations;
