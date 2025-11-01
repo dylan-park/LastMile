@@ -11,10 +11,6 @@ services:
     environment:
       # Database configuration
       - DATABASE_PATH=/app/data
-      - SURREAL_USER=root
-      # Uncomment to set password (currently not used in embedded mode)
-      # - SURREAL_PASS=your_secure_password_here
-      - SURREAL_BIND=0.0.0.0:8000
 
       # Timezone
       - TZ=America/Chicago
@@ -24,8 +20,6 @@ services:
     ports:
       # Application port
       - "3000:3000"
-      # Optional: SurrealDB remote access port (if using separate SurrealDB instance)
-      # - "8000:8000"
     volumes:
       # Mount database data
       - ./data:/app/data
