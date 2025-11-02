@@ -9,6 +9,8 @@ services:
     environment:
       # Database configuration
       - DATABASE_PATH=/app/data
+      # Network configuration
+      - PORT=3000
 
       # Timezone
       - TZ=America/Chicago

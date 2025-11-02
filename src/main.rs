@@ -107,6 +107,10 @@ async fn main() {
 
     // Get configuration from environment or use defaults
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "./data".to_string());
+    let port: u16 = std::env::var("PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(3000);
 
     info!("Initializing SurrealDB at {}", db_path);
 
@@ -151,9 +155,11 @@ async fn main() {
         .fallback_service(static_files)
         .layer(CompressionLayer::new());
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port))
+        .await
+        .expect("Failed to bind port");
 
-    info!("Server running on http://0.0.0.0:3000");
+    info!("Server running on http://0.0.0.0:{}", port);
     info!("Database location: {}", db_path);
     info!("Note: For database management, use SurrealDB CLI:");
     info!(
