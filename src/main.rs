@@ -1,3 +1,31 @@
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
+
+use axum::{
+    Router,
+    body::Body,
+    http::{
+        Request, Response,
+        header::{CACHE_CONTROL, HeaderValue},
+    },
+    routing::{get, post, put},
+};
+use futures::{FutureExt, future::BoxFuture};
+use http_body::Body as HttpBody;
+use surrealdb::{
+    Surreal,
+    engine::local::{Db, RocksDb},
+};
+use tower::{Layer, Service};
+use tower_http::{
+    compression::CompressionLayer,
+    cors::{Any, CorsLayer},
+    services::ServeDir,
+};
+use tracing::info;
+
 use crate::{
     handlers::shifts::{
         end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range, start_shift,
@@ -5,20 +33,6 @@ use crate::{
     },
     state::AppState,
 };
-use axum::{
-    Router,
-    routing::{get, post, put},
-};
-use std::sync::Arc;
-use surrealdb::{
-    Surreal,
-    engine::local::{Db, RocksDb},
-};
-use tower_http::{
-    cors::{Any, CorsLayer},
-    services::ServeDir,
-};
-use tracing::info;
 
 mod calculations;
 mod db;
@@ -27,6 +41,60 @@ mod handlers;
 mod models;
 mod state;
 mod validation;
+
+// Custom Cache layer
+#[derive(Clone)]
+pub struct CacheControlLayer;
+
+impl<S> Layer<S> for CacheControlLayer {
+    type Service = CacheControlMiddleware<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        CacheControlMiddleware { inner }
+    }
+}
+
+#[derive(Clone)]
+pub struct CacheControlMiddleware<S> {
+    inner: S,
+}
+
+impl<S, B> Service<Request<Body>> for CacheControlMiddleware<S>
+where
+    S: Service<Request<Body>, Response = Response<B>> + Clone + Send + 'static,
+    S::Future: Send + 'static,
+    S::Error: 'static,
+    B: HttpBody + Send + 'static, // ✅ Generic body support here
+{
+    type Response = Response<B>;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request<Body>) -> Self::Future {
+        let mut inner = self.inner.clone();
+        let path = req.uri().path().to_lowercase();
+
+        async move {
+            let mut res = inner.call(req).await?;
+
+            let value = if path.ends_with(".html") {
+                "no-cache"
+            } else {
+                "public, max-age=604800" // 7 days
+            };
+
+            res.headers_mut()
+                .insert(CACHE_CONTROL, HeaderValue::from_static(value));
+
+            Ok(res)
+        }
+        .boxed()
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -66,6 +134,8 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    let static_files = CacheControlLayer.layer(ServeDir::new("static"));
+
     let app = Router::new()
         // API routes
         .route("/api/shifts", get(get_all_shifts))
@@ -78,7 +148,8 @@ async fn main() {
         .with_state(state)
         .layer(cors)
         // Serve static files from ./static directory as fallback
-        .fallback_service(ServeDir::new("static"));
+        .fallback_service(static_files)
+        .layer(CompressionLayer::new());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
