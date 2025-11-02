@@ -1,3 +1,14 @@
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
+use std::sync::Arc;
+use tracing::{info, warn};
+
 use crate::{
     calculations,
     db::helpers::{get_shift_by_id, has_active_shift},
@@ -9,16 +20,6 @@ use crate::{
     state::AppState,
     validation,
 };
-use axum::{
-    Json,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
-};
-use chrono::{DateTime, Utc};
-use rust_decimal::Decimal;
-use std::sync::Arc;
-use tracing::{info, warn};
 
 pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<Vec<Shift>>> {
     info!("Fetching all shifts");
