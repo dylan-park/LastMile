@@ -321,6 +321,30 @@ html.dark-mode .miles-icon {
     transition: all var(--transition-base);
 }
 
+/* Loading state for stats */
+.stat-value.loading {
+    background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 25%,
+        var(--bg-hover) 50%,
+        var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    color: transparent;
+    user-select: none;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 @keyframes statUpdate {
     0% {
         transform: scale(1);

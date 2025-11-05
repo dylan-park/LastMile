@@ -260,10 +260,12 @@ function formatDateForInput(date) {
 }
 
 // Initialize
+// UI is interactive immediately, data loads asynchronously
 document.addEventListener("DOMContentLoaded", () => {
   // Update theme button to match current state
   updateThemeButton();
 
+  // Setup all event listeners (non-blocking)
   document.getElementById("themeToggle").addEventListener("click", toggleTheme);
   document
     .getElementById("startShiftBtn")
@@ -315,6 +317,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   UI.setupTableSorting();
 
-  checkActiveShift();
-  loadShifts();
+  // Load data asynchronously WITHOUT blocking the UI
+  // The page is now interactive, data will populate when ready
+  Promise.all([checkActiveShift(), loadShifts()]).catch((error) => {
+    console.error("Error during initial load:", error);
+    // Show error state in UI
+    UI.showToast("Failed to load initial data", "error");
+  });
 });

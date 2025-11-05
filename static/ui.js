@@ -35,9 +35,10 @@ const UI = {
     );
     const avgRate = totalHours > 0 ? totalEarnings / totalHours : 0;
 
-    // Add animation class
+    // Remove loading class and add animation class
     const statValues = document.querySelectorAll(".stat-value");
     statValues.forEach((el) => {
+      el.classList.remove("loading");
       el.classList.add("updating");
       setTimeout(() => el.classList.remove("updating"), 300);
     });
