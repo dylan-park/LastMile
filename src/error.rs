@@ -5,7 +5,7 @@ use tracing::error;
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(#[from] Box<surrealdb::Error>),
 
     #[error("Shift not found")]
     ShiftNotFound,

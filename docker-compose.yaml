@@ -1,60 +1,33 @@
-# docker exec -it uber-eats-tracker-db mariadb -u root -p uber_eats_tracker
-
-networks:
-  uber-eats-tracker-network:
-    name: uber-eats-tracker-network
-    driver: bridge
-
 services:
-  mariadb:
-    container_name: uber-eats-tracker-db
-    hostname: mariadb
-    image: mariadb:11
-    networks:
-      - uber-eats-tracker-network
-    restart: unless-stopped
-    command: --default-time-zone='+00:00'
-    environment:
-      MYSQL_ROOT_PASSWORD: jg6DRQyRFjkY
-      MYSQL_DATABASE: uber_eats_tracker
-      MYSQL_USER: uber_eats
-      MYSQL_PASSWORD: prqSjx9tMsPH
-      TZ: "America/Chicago"
-    volumes:
-      - mariadb_data:/var/lib/mysql
-
   uber-eats-tracker:
-    build: .
-    container_name: uber-eats-tracker-api
-    hostname: uber-eats-tracker-api
-    networks:
-      - uber-eats-tracker-network
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uber-eats-tracker
+    hostname: uber-eats-tracker
     restart: unless-stopped
     environment:
-      - DATABASE_URL=mysql://uber_eats:prqSjx9tMsPH@mariadb/uber_eats_tracker
-      - TZ=America/Chicago
-    ports:
-      - "8031:3000"
-    depends_on:
-      - mariadb
+      # Database configuration
+      - DATABASE_PATH=/app/data
+      # Network configuration
+      - PORT=3000
 
-  nginx:
-    container_name: uber-eats-tracker-web
-    hostname: uber-eats-tracker-web
-    image: nginx:alpine
-    networks:
-      - uber-eats-tracker-network
-    restart: unless-stopped
-    ports:
-      - "8030:80"
-    environment:
+      # Timezone
       - TZ=America/Chicago
+
+      # Logging
+      - RUST_LOG=info
+    ports:
+      # Application port
+      - "3000:3000"
     volumes:
-      - ./static:/usr/share/nginx/html:ro
-    depends_on:
-      - mariadb
-      - uber-eats-tracker
-
-volumes:
-  mariadb_data:
-    name: uber-eats-tracker-mariadb_data
+      # Mount database data
+      - ./data:/app/data
+      # Optional: Mount static files for easy updates without rebuild
+      - ./static:/app/static:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/shifts/active"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

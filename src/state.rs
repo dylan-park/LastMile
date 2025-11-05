@@ -1,5 +1,5 @@
-use sqlx::{MySql, Pool};
+use surrealdb::{Surreal, engine::local::Db};
 
 pub struct AppState {
-    pub db: Pool<MySql>,
+    pub db: Surreal<Db>,
 }

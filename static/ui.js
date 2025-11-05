@@ -17,57 +17,19 @@ const UI = {
     document.getElementById("loadingOverlay").classList.add("hidden");
   },
 
-  updateStats(
-    shifts,
-    period = "month",
-    customRange = { start: null, end: null },
-  ) {
-    // Filter shifts based on period
-    let filteredShifts = shifts.filter((s) => s.end_time);
+  updateStats(shifts) {
+    // Filter to only completed shifts (those with end_time)
+    const completedShifts = shifts.filter((s) => s.end_time);
 
-    if (period === "month") {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-
-      filteredShifts = filteredShifts.filter((shift) => {
-        // Parse UTC timestamp and convert to local timezone
-        const shiftDate = parseUTCToLocal(shift.start_time);
-        return (
-          shiftDate.getMonth() === currentMonth &&
-          shiftDate.getFullYear() === currentYear
-        );
-      });
-    } else if (period === "custom") {
-      if (customRange.start || customRange.end) {
-        filteredShifts = filteredShifts.filter((shift) => {
-          // Parse UTC timestamp and convert to local timezone
-          const shiftDate = parseUTCToLocal(shift.start_time);
-
-          if (customRange.start && customRange.end) {
-            return (
-              shiftDate >= customRange.start && shiftDate <= customRange.end
-            );
-          } else if (customRange.start) {
-            return shiftDate >= customRange.start;
-          } else if (customRange.end) {
-            return shiftDate <= customRange.end;
-          }
-
-          return true;
-        });
-      }
-    }
-
-    const totalEarnings = filteredShifts.reduce(
+    const totalEarnings = completedShifts.reduce(
       (sum, s) => sum + parseFloat(s.day_total || 0),
       0,
     );
-    const totalHours = filteredShifts.reduce(
+    const totalHours = completedShifts.reduce(
       (sum, s) => sum + parseFloat(s.hours_worked || 0),
       0,
     );
-    const totalMiles = filteredShifts.reduce(
+    const totalMiles = completedShifts.reduce(
       (sum, s) => sum + parseFloat(s.miles_driven || 0),
       0,
     );
@@ -107,52 +69,11 @@ const UI = {
     }
   },
 
-  renderShifts(
-    shifts,
-    searchTerm = "",
-    period = "month",
-    customRange = { start: null, end: null },
-  ) {
+  renderShifts(shifts, searchTerm = "") {
     const tbody = document.getElementById("shiftsBody");
 
-    // First apply period filtering
-    let periodFiltered = [...shifts];
-
-    if (period === "month") {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-
-      periodFiltered = periodFiltered.filter((shift) => {
-        const shiftDate = parseUTCToLocal(shift.start_time);
-        return (
-          shiftDate.getMonth() === currentMonth &&
-          shiftDate.getFullYear() === currentYear
-        );
-      });
-    } else if (period === "custom") {
-      if (customRange.start || customRange.end) {
-        periodFiltered = periodFiltered.filter((shift) => {
-          const shiftDate = parseUTCToLocal(shift.start_time);
-
-          if (customRange.start && customRange.end) {
-            return (
-              shiftDate >= customRange.start && shiftDate <= customRange.end
-            );
-          } else if (customRange.start) {
-            return shiftDate >= customRange.start;
-          } else if (customRange.end) {
-            return shiftDate <= customRange.end;
-          }
-
-          return true;
-        });
-      }
-    }
-    // If period === "all", no filtering needed
-
-    // Then apply search filtering
-    const filtered = periodFiltered.filter((shift) => {
+    // Apply search filtering on the already backend-filtered shifts
+    const filtered = shifts.filter((shift) => {
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
       return (
@@ -166,7 +87,7 @@ const UI = {
     if (filtered.length === 0) {
       tbody.innerHTML = `
                 <tr class="empty-state">
-                    <td colspan="13">
+                    <td colspan="12">
                         <div class="empty-content">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -187,7 +108,6 @@ const UI = {
       .map(
         (shift) => `
             <tr data-shift-id="${shift.id}">
-                <td>${shift.id}</td>
                 <td>${formatDateTime(shift.start_time)}</td>
                 <td>${formatDateTime(shift.end_time)}</td>
                 <td class="calculated">${formatHours(shift.hours_worked)}</td>
