@@ -24,7 +24,7 @@ pub fn calculate_hourly_pay(day_total: &Decimal, hours_worked: &Decimal) -> Opti
     }
 }
 
-// Helper function to ensure decimal values are properly normalized with 2 decimal places
+// Helper function to ensure decimal values from user input are properly normalized with 2 decimal places
 pub fn normalize_decimal(value: Decimal) -> Decimal {
     value.round_dp(2)
 }

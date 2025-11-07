@@ -22,6 +22,13 @@ pub enum AppError {
     InvalidMonetaryValue(String),
 }
 
+// Helper conversion to avoid .map_err(Box::new) everywhere
+impl From<surrealdb::Error> for AppError {
+    fn from(err: surrealdb::Error) -> Self {
+        AppError::Database(Box::new(err))
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let (status, message) = match self {

@@ -11,7 +11,7 @@ use tracing::{info, warn};
 
 use crate::{
     calculations,
-    db::helpers::{get_shift_by_id, has_active_shift},
+    db::helpers::{get_shift_by_id, has_active_shift, query_shifts},
     error::{AppError, Result},
     models::{
         DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
@@ -24,9 +24,7 @@ use crate::{
 pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<Vec<Shift>>> {
     info!("Fetching all shifts");
 
-    let query = "SELECT * FROM shifts ORDER BY start_time DESC";
-    let mut result = state.db.query(query).await.map_err(Box::new)?;
-    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
+    let shifts = query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time DESC").await?;
 
     info!("Retrieved {} shifts", shifts.len());
     Ok(Json(shifts))
@@ -67,10 +65,9 @@ pub async fn get_shifts_by_range(
         .query(query)
         .bind(("start", start_surreal))
         .bind(("end", end_surreal))
-        .await
-        .map_err(Box::new)?;
+        .await?;
 
-    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
+    let shifts: Vec<Shift> = result.take(0)?;
 
     info!("Retrieved {} shifts in range", shifts.len());
     Ok(Json(shifts))
@@ -79,9 +76,11 @@ pub async fn get_shifts_by_range(
 pub async fn get_active_shift(State(state): State<Arc<AppState>>) -> Result<Json<Option<Shift>>> {
     info!("Checking for active shift");
 
-    let query = "SELECT * FROM shifts WHERE end_time = NONE ORDER BY start_time DESC LIMIT 1";
-    let mut result = state.db.query(query).await.map_err(Box::new)?;
-    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
+    let shifts = query_shifts(
+        &state.db,
+        "SELECT * FROM shifts WHERE end_time = NONE ORDER BY start_time DESC LIMIT 1",
+    )
+    .await?;
     let shift = shifts.into_iter().next();
 
     if shift.is_some() {
@@ -126,12 +125,7 @@ pub async fn start_shift(
     };
 
     // Create returns Option<T>
-    let shift: Option<Shift> = state
-        .db
-        .create("shifts")
-        .content(record)
-        .await
-        .map_err(Box::new)?;
+    let shift: Option<Shift> = state.db.create("shifts").content(record).await?;
     let shift = shift.ok_or_else(|| {
         AppError::Database(Box::new(surrealdb::Error::Api(
             surrealdb::error::Api::Query("Failed to create shift".to_string()),
@@ -162,7 +156,7 @@ pub async fn end_shift(
 
     let notes = validation::sanitize_notes(payload.notes);
 
-    // Calculate derived fields
+    // Calculate derived fields (already normalized by calculation functions)
     let now = Utc::now();
     let miles_driven = calculations::calculate_miles(shift.odometer_start, payload.odometer_end);
     let hours_worked = calculations::calculate_hours(shift.start_time, now);
@@ -189,8 +183,7 @@ pub async fn end_shift(
         .db
         .update(("shifts", id.as_str()))
         .merge(update)
-        .await
-        .map_err(Box::new)?;
+        .await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -210,7 +203,7 @@ pub async fn update_shift(
 
     let shift = get_shift_by_id(&state.db, &id).await?;
 
-    // Merge updates with existing values
+    // Merge updates with existing values, normalizing user inputs
     let odometer_start = payload.odometer_start.unwrap_or(shift.odometer_start);
     let odometer_end = payload.odometer_end.or(shift.odometer_end);
     let earnings = calculations::normalize_decimal(payload.earnings.unwrap_or(shift.earnings));
@@ -232,7 +225,7 @@ pub async fn update_shift(
         validation::validate_odometer(odometer_start, end)?;
     }
 
-    // Recalculate derived fields
+    // Recalculate derived fields (already normalized by calculation functions)
     let miles_driven = odometer_end.map(|end| calculations::calculate_miles(odometer_start, end));
 
     let hours_worked = shift
@@ -265,8 +258,7 @@ pub async fn update_shift(
         .db
         .update(("shifts", id.as_str()))
         .merge(update)
-        .await
-        .map_err(Box::new)?;
+        .await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -277,9 +269,7 @@ pub async fn update_shift(
 pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse> {
     info!("Exporting shifts to CSV");
 
-    let query = "SELECT * FROM shifts ORDER BY start_time ASC";
-    let mut result = state.db.query(query).await.map_err(Box::new)?;
-    let shifts: Vec<Shift> = result.take(0).map_err(Box::new)?;
+    let shifts = query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time ASC").await?;
 
     let mut csv = String::from(
         "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
