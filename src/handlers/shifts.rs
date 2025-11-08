@@ -11,7 +11,7 @@ use tracing::{info, warn};
 
 use crate::{
     calculations,
-    db::helpers::{get_shift_by_id, has_active_shift, query_shifts},
+    db::helpers::{get_shift_by_id, has_active_shift, query_shifts, query_shifts_with_date_range},
     error::{AppError, Result},
     models::{
         DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
@@ -60,14 +60,7 @@ pub async fn get_shifts_by_range(
 
     // Query shifts within the date range
     let query = "SELECT * FROM shifts WHERE start_time >= $start AND start_time <= $end ORDER BY start_time DESC";
-    let mut result = state
-        .db
-        .query(query)
-        .bind(("start", start_surreal))
-        .bind(("end", end_surreal))
-        .await?;
-
-    let shifts: Vec<Shift> = result.take(0)?;
+    let shifts = query_shifts_with_date_range(&state.db, query, start_surreal, end_surreal).await?;
 
     info!("Retrieved {} shifts in range", shifts.len());
     Ok(Json(shifts))

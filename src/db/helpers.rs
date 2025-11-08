@@ -12,6 +12,22 @@ pub async fn query_shifts(db: &Surreal<Db>, query: &str) -> Result<Vec<Shift>> {
     Ok(shifts)
 }
 
+// Helper to execute a parameterized query with two datetime binds and extract shifts
+pub async fn query_shifts_with_date_range(
+    db: &Surreal<Db>,
+    query: &str,
+    start: surrealdb::sql::Datetime,
+    end: surrealdb::sql::Datetime,
+) -> Result<Vec<Shift>> {
+    let mut result = db
+        .query(query)
+        .bind(("start", start))
+        .bind(("end", end))
+        .await?;
+    let shifts: Vec<Shift> = result.take(0)?;
+    Ok(shifts)
+}
+
 pub async fn has_active_shift(db: &Surreal<Db>) -> Result<bool> {
     let shifts = query_shifts(db, "SELECT * FROM shifts WHERE end_time = NONE LIMIT 1").await?;
     Ok(!shifts.is_empty())
