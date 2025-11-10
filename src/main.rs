@@ -10,7 +10,7 @@ use axum::{
         Request, Response,
         header::{CACHE_CONTROL, HeaderValue},
     },
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
 };
 use futures::{FutureExt, future::BoxFuture};
 use http_body::Body as HttpBody;
@@ -27,9 +27,15 @@ use tower_http::{
 use tracing::info;
 
 use crate::{
-    handlers::shifts::{
-        end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range, start_shift,
-        update_shift,
+    handlers::{
+        maintenance::{
+            calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
+            get_all_maintenance_items, update_maintenance_item,
+        },
+        shifts::{
+            end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range,
+            start_shift, update_shift,
+        },
     },
     state::AppState,
 };
@@ -142,6 +148,7 @@ async fn main() {
 
     let app = Router::new()
         // API routes
+        // Shifts
         .route("/api/shifts", get(get_all_shifts))
         .route("/api/shifts/range", get(get_shifts_by_range))
         .route("/api/shifts/active", get(get_active_shift))
@@ -149,6 +156,15 @@ async fn main() {
         .route("/api/shifts/{id}/end", post(end_shift))
         .route("/api/shifts/{id}", put(update_shift))
         .route("/api/shifts/export", get(export_csv))
+        // Maintenance
+        .route("/api/maintenance", get(get_all_maintenance_items))
+        .route("/api/maintenance/create", post(create_maintenance_item))
+        .route("/api/maintenance/{id}", put(update_maintenance_item))
+        .route("/api/maintenance/{id}", delete(delete_maintenance_item))
+        .route(
+            "/api/maintenance/calculate",
+            get(calculate_required_maintenance),
+        )
         .with_state(state)
         .layer(cors)
         // Serve static files from ./static directory as fallback

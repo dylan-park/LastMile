@@ -10,6 +10,9 @@ pub enum AppError {
     #[error("Shift not found")]
     ShiftNotFound,
 
+    #[error("Maintenance Item not found")]
+    MaintenanceItemNotFound,
+
     #[error("Active shift already exists")]
     ActiveShiftExists,
 
@@ -40,6 +43,7 @@ impl IntoResponse for AppError {
                 )
             }
             AppError::ShiftNotFound => (StatusCode::NOT_FOUND, self.to_string()),
+            AppError::MaintenanceItemNotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::ActiveShiftExists => (StatusCode::CONFLICT, self.to_string()),
             AppError::InvalidOdometer { .. } => (StatusCode::BAD_REQUEST, self.to_string()),
             AppError::InvalidMonetaryValue(_) => (StatusCode::BAD_REQUEST, self.to_string()),

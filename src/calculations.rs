@@ -24,6 +24,14 @@ pub fn calculate_hourly_pay(day_total: &Decimal, hours_worked: &Decimal) -> Opti
     }
 }
 
+pub fn calculate_is_maintenance_required(
+    latest_mileage: i32,
+    last_service_mileage: i32,
+    mileage_interval: i32,
+) -> bool {
+    latest_mileage >= (last_service_mileage + mileage_interval)
+}
+
 // Helper function to ensure decimal values from user input are properly normalized with 2 decimal places
 pub fn normalize_decimal(value: Decimal) -> Decimal {
     value.round_dp(2)
