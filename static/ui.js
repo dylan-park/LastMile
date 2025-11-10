@@ -129,20 +129,110 @@ const UI = {
     this.attachCellEditListeners();
   },
 
-  attachCellEditListeners() {
-    document.querySelectorAll('td[contenteditable="true"]').forEach((cell) => {
-      cell.addEventListener("blur", handleCellEdit);
-      cell.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          cell.blur();
-        }
-      });
+  renderMaintenanceItems(items, searchTerm = "", requiredIds = new Set()) {
+    const tbody = document.getElementById("maintenanceBody");
+
+    // Apply search filtering
+    const filtered = items.filter((item) => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(search) ||
+        (item.notes && item.notes.toLowerCase().includes(search))
+      );
     });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+                <tr class="empty-state">
+                    <td colspan="6">
+                        <div class="empty-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            <p>${searchTerm ? "No maintenance items found" : "No maintenance items yet"}</p>
+                            <small>${searchTerm ? "Try a different search term" : "Click 'Add Maintenance Item' to create one"}</small>
+                        </div>
+                    </td>
+                </tr>
+            `;
+      return;
+    }
+
+    tbody.innerHTML = filtered
+      .map((item) => {
+        const isRequired = requiredIds.has(item.id);
+        const rowClass = isRequired ? "maintenance-required" : "";
+        const enabledText = item.enabled ? "Yes" : "No";
+        const enabledClass = item.enabled ? "enabled-yes" : "enabled-no";
+
+        return `
+            <tr data-maintenance-id="${item.id}" class="${rowClass}">
+                <td contenteditable="true" data-field="name" data-id="${item.id}">${item.name}</td>
+                <td contenteditable="true" data-field="mileage_interval" data-id="${item.id}">${item.mileage_interval}</td>
+                <td contenteditable="true" data-field="last_service_mileage" data-id="${item.id}">${item.last_service_mileage}</td>
+                <td class="enabled-cell ${enabledClass}" role="button" tabindex="0" data-field="enabled" data-id="${item.id}">${enabledText}</td>
+                <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${item.id}" title="${item.notes || ""}">${item.notes || ""}</td>
+                <td class="action-cell">
+                    <button class="btn-delete-small" onclick="handleDeleteMaintenance('${item.id}')" title="Delete">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `;
+      })
+      .join("");
+
+    this.attachMaintenanceCellEditListeners();
+  },
+
+  attachCellEditListeners() {
+    document
+      .querySelectorAll('#shiftsBody td[contenteditable="true"]')
+      .forEach((cell) => {
+        cell.addEventListener("blur", handleCellEdit);
+        cell.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            cell.blur();
+          }
+        });
+      });
+  },
+
+  attachMaintenanceCellEditListeners() {
+    // Text editable cells
+    document
+      .querySelectorAll('#maintenanceBody td[contenteditable="true"]')
+      .forEach((cell) => {
+        cell.addEventListener("blur", handleMaintenanceCellEdit);
+        cell.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            cell.blur();
+          }
+        });
+      });
+
+    // Enabled toggle cells
+    document
+      .querySelectorAll("#maintenanceBody .enabled-cell")
+      .forEach((cell) => {
+        cell.addEventListener("click", handleMaintenanceCellEdit);
+        cell.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleMaintenanceCellEdit(e);
+          }
+        });
+      });
   },
 
   setupTableSorting() {
-    document.querySelectorAll("th[data-sort]").forEach((th) => {
+    document.querySelectorAll("#shiftsTable th[data-sort]").forEach((th) => {
       th.addEventListener("click", () => {
         const sortField = th.dataset.sort;
         const currentSort = th.classList.contains("sort-asc")
@@ -151,7 +241,7 @@ const UI = {
             ? "desc"
             : null;
 
-        document.querySelectorAll("th").forEach((header) => {
+        document.querySelectorAll("#shiftsTable th").forEach((header) => {
           header.classList.remove("sort-asc", "sort-desc");
         });
 
@@ -164,6 +254,35 @@ const UI = {
         }
       });
     });
+  },
+
+  setupMaintenanceTableSorting() {
+    document
+      .querySelectorAll("#maintenanceTable th[data-sort]")
+      .forEach((th) => {
+        th.addEventListener("click", () => {
+          const sortField = th.dataset.sort;
+          const currentSort = th.classList.contains("sort-asc")
+            ? "asc"
+            : th.classList.contains("sort-desc")
+              ? "desc"
+              : null;
+
+          document
+            .querySelectorAll("#maintenanceTable th")
+            .forEach((header) => {
+              header.classList.remove("sort-asc", "sort-desc");
+            });
+
+          if (currentSort === "asc") {
+            th.classList.add("sort-desc");
+            sortMaintenanceTable(sortField, "desc");
+          } else {
+            th.classList.add("sort-asc");
+            sortMaintenanceTable(sortField, "asc");
+          }
+        });
+      });
   },
 
   openModal() {
@@ -182,5 +301,23 @@ const UI = {
     document.getElementById("tips").value = "0";
     document.getElementById("gasCost").value = "0";
     document.getElementById("notes").value = "";
+  },
+
+  openMaintenanceModal() {
+    const modal = document.getElementById("maintenanceModal");
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+  },
+
+  closeMaintenanceModal() {
+    const modal = document.getElementById("maintenanceModal");
+    modal.classList.remove("show");
+    document.body.style.overflow = "";
+
+    document.getElementById("maintenanceName").value = "";
+    document.getElementById("maintenanceMileageInterval").value = "";
+    document.getElementById("maintenanceLastService").value = "0";
+    document.getElementById("maintenanceEnabled").checked = true;
+    document.getElementById("maintenanceNotes").value = "";
   },
 };

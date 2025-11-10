@@ -2,6 +2,7 @@ let activeShift = null;
 let allShifts = [];
 let statsPeriod = "month"; // Default to monthly view
 let customDateRange = { start: null, end: null };
+let currentView = "shifts";
 
 async function loadShifts() {
   try {
@@ -95,6 +96,8 @@ async function handleEndShift() {
     UI.closeModal();
     await checkActiveShift();
     await loadShifts();
+    // Update maintenance since odometer changed
+    await loadRequiredMaintenance();
     UI.showToast("Shift ended successfully", "success");
   } catch (error) {
     UI.showToast("Failed to end shift", "error");
@@ -124,6 +127,10 @@ async function handleCellEdit(e) {
 
     await API.updateShift(id, payload);
     await loadShifts();
+    // Update maintenance if odometer changed
+    if (["odometer_start", "odometer_end"].includes(field)) {
+      await loadRequiredMaintenance();
+    }
   } catch (error) {
     console.error("Error updating shift:", error);
     UI.showToast("Failed to update shift", "error");
@@ -248,6 +255,27 @@ async function handleCustomDateChange() {
   await loadShifts();
 }
 
+function switchView(view) {
+  currentView = view;
+
+  // Update toggle buttons
+  document.querySelectorAll(".view-toggle-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === view);
+  });
+
+  // Show/hide views
+  const shiftsView = document.getElementById("shiftsView");
+  const maintenanceView = document.getElementById("maintenanceView");
+
+  if (view === "shifts") {
+    shiftsView.style.display = "block";
+    maintenanceView.style.display = "none";
+  } else {
+    shiftsView.style.display = "none";
+    maintenanceView.style.display = "block";
+  }
+}
+
 const debouncedSearch = debounce((searchTerm) => {
   UI.renderShifts(allShifts, searchTerm);
 }, 300);
@@ -260,12 +288,11 @@ function formatDateForInput(date) {
 }
 
 // Initialize
-// UI is interactive immediately, data loads asynchronously
 document.addEventListener("DOMContentLoaded", () => {
   // Update theme button to match current state
   updateThemeButton();
 
-  // Setup all event listeners (non-blocking)
+  // Setup all event listeners
   document.getElementById("themeToggle").addEventListener("click", toggleTheme);
   document
     .getElementById("startShiftBtn")
@@ -315,13 +342,47 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("endDate")
     .addEventListener("change", handleCustomDateChange);
 
-  UI.setupTableSorting();
+  // View toggle listeners
+  document.querySelectorAll(".view-toggle-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      switchView(btn.dataset.view);
+    });
+  });
 
-  // Load data asynchronously WITHOUT blocking the UI
-  // The page is now interactive, data will populate when ready
-  Promise.all([checkActiveShift(), loadShifts()]).catch((error) => {
+  // Maintenance listeners
+  document
+    .getElementById("addMaintenanceBtn")
+    .addEventListener("click", () => UI.openMaintenanceModal());
+  document
+    .getElementById("maintenanceModalClose")
+    .addEventListener("click", () => UI.closeMaintenanceModal());
+  document
+    .getElementById("maintenanceModalCancel")
+    .addEventListener("click", () => UI.closeMaintenanceModal());
+  document
+    .getElementById("maintenanceModalSubmit")
+    .addEventListener("click", handleCreateMaintenance);
+  document
+    .querySelector(".maintenance-modal-backdrop")
+    .addEventListener("click", () => UI.closeMaintenanceModal());
+
+  document
+    .getElementById("maintenanceSearchInput")
+    .addEventListener("input", (e) => {
+      debouncedMaintenanceSearch(e.target.value);
+    });
+
+  UI.setupTableSorting();
+  UI.setupMaintenanceTableSorting();
+
+  // Load data asynchronously
+  Promise.all([
+    checkActiveShift(),
+    loadShifts(),
+    loadRequiredMaintenance(),
+    loadMaintenanceItems(),
+  ]).catch((error) => {
     console.error("Error during initial load:", error);
-    // Show error state in UI
     UI.showToast("Failed to load initial data", "error");
   });
 });

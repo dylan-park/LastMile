@@ -27,6 +27,10 @@
     --calculated-text: #6b46c1;
     --calculated-border: #e9d8fd;
 
+    /* Maintenance Colors */
+    --maintenance-required-bg: #fff5f5;
+    --maintenance-required-border: #feb2b2;
+
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md:
@@ -65,6 +69,9 @@ html.dark-mode {
     --calculated-bg: #2d1b4e;
     --calculated-text: #d6bcfa;
     --calculated-border: #553c7b;
+
+    --maintenance-required-bg: #3a2020;
+    --maintenance-required-border: #9b2c2c;
 
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --shadow-md:
@@ -146,6 +153,74 @@ h1 svg {
 
 .theme-toggle svg {
     color: var(--text-secondary);
+}
+
+/* ===== VIEW TOGGLE ===== */
+.view-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.view-toggle {
+    display: inline-flex;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+    box-shadow: var(--shadow-sm);
+}
+
+.view-toggle-option {
+    padding: 8px 20px;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    position: relative;
+}
+
+.view-toggle-option:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.view-toggle-option.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.view-toggle-option.active:hover {
+    background: var(--accent-dark);
+}
+
+.maintenance-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 9px;
+    line-height: 1;
+}
+
+.view-toggle-option.active .maintenance-badge {
+    background: white;
+    color: var(--danger);
 }
 
 /* ===== STATS TOGGLE ===== */
@@ -418,7 +493,8 @@ html.dark-mode .miles-icon {
     box-shadow: var(--shadow-sm);
 }
 
-.shift-controls {
+.shift-controls,
+.maintenance-controls {
     display: flex;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
@@ -436,6 +512,11 @@ html.dark-mode .miles-icon {
     flex-wrap: wrap;
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--border-color);
+}
+
+.maintenance-controls + .table-actions {
+    margin-top: 0;
+    padding-top: var(--spacing-md);
 }
 
 .search-box {
@@ -519,6 +600,18 @@ button:active {
     opacity: 0.9;
 }
 
+.btn-delete-small {
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.btn-delete-small:hover {
+    background: var(--danger);
+    color: white;
+}
+
 /* ===== INPUTS ===== */
 input,
 textarea {
@@ -542,6 +635,21 @@ textarea:focus {
 textarea {
     resize: vertical;
     line-height: 1.5;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin: 0;
 }
 
 /* ===== TABLE ===== */
@@ -664,6 +772,39 @@ td[contenteditable="true"]:focus {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.action-cell {
+    text-align: center;
+    width: 80px;
+}
+
+.enabled-cell {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    text-align: center;
+}
+
+.enabled-cell:hover {
+    background: var(--accent-light);
+}
+
+.enabled-yes {
+    color: var(--accent);
+}
+
+.enabled-no {
+    color: var(--text-muted);
+}
+
+.maintenance-required {
+    background: var(--maintenance-required-bg) !important;
+    border-left: 3px solid var(--danger);
+}
+
+.maintenance-required:hover {
+    background: var(--danger-light) !important;
 }
 
 .empty-state td {
@@ -916,11 +1057,13 @@ td[contenteditable="true"]:focus {
         font-size: 1.5rem;
     }
 
+    .view-toggle,
     .stats-toggle {
         flex-direction: column;
         width: 100%;
     }
 
+    .view-toggle-option,
     .toggle-option {
         width: 100%;
         text-align: center;
@@ -952,12 +1095,14 @@ td[contenteditable="true"]:focus {
         align-items: flex-start;
     }
 
-    .shift-controls {
+    .shift-controls,
+    .maintenance-controls {
         flex-direction: column;
     }
 
     .odo-input,
-    .shift-controls button {
+    .shift-controls button,
+    .maintenance-controls button {
         width: 100%;
     }
 
