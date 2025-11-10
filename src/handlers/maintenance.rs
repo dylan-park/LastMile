@@ -146,7 +146,9 @@ pub async fn calculate_required_maintenance(
         }
     };
 
-    let maintenance_items = query_maitenance_items(&state.db, "SELECT * FROM maintenance").await?;
+    let maintenance_items =
+        query_maitenance_items(&state.db, "SELECT * FROM maintenance WHERE enabled = true;")
+            .await?;
 
     let required_maintenance_items: Vec<_> = maintenance_items
         .into_iter()
