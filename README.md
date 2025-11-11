@@ -5,6 +5,7 @@ A self-hosted web application for tracking Uber Eats delivery shifts. Built with
 ## Features
 
 - **Shift Tracking**: Start and end shifts with odometer readings, earnings, tips, and gas costs
+- **Maintenance Task Tracking**: Stay up to date on your vehicle maitenance with simple to program alerts
 - **Real-time Stats**: View earnings, hours worked, hourly rate, and miles driven
 - **Flexible Filtering**: Filter shifts by month, all time, or custom date ranges
 - **Editable Data**: Click any field in the table to edit shift details inline
@@ -70,4 +71,5 @@ Environment variables (optional):
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
   - [ ] Investigate desktop site improvements
-- [ ] Track maitnence tasks
+- [x] Track maintenance tasks
+  - [ ] Calculate remaining milage per maintenance task
