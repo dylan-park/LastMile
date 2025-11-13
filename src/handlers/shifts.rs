@@ -306,7 +306,7 @@ pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoR
             ("Content-Type", "text/csv"),
             (
                 "Content-Disposition",
-                "attachment; filename=\"uber_eats_shifts.csv\"",
+                "attachment; filename=\"lastmile_shifts.csv\"",
             ),
         ],
         csv,

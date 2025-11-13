@@ -129,7 +129,7 @@ async fn main() {
         .expect("Failed to initialize SurrealDB");
 
     // Use namespace and database
-    db.use_ns("uber_eats_tracker")
+    db.use_ns("lastmile")
         .use_db("main")
         .await
         .expect("Failed to use namespace and database");
@@ -179,7 +179,7 @@ async fn main() {
     info!("Database location: {}", db_path);
     info!("Note: For database management, use SurrealDB CLI:");
     info!(
-        "  surreal sql --endpoint file://{} --namespace uber_eats_tracker --database main",
+        "  surreal sql --endpoint file://{} --namespace lastmile --database main",
         db_path
     );
     axum::serve(listener, app).await.unwrap();

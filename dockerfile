@@ -25,7 +25,7 @@ RUN mkdir -p src && \
 RUN cargo build --release
 
 # Remove the dummy source and target artifacts
-RUN rm -rf src target/release/deps/uber_eats_tracker* target/release/uber-eats-tracker*
+RUN rm -rf src target/release/deps/lastmile* target/release/lastmile*
 
 # Copy the actual source code
 COPY . .
@@ -50,7 +50,7 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 # Copy the binary from the builder
-COPY --from=builder /usr/src/app/target/release/uber-eats-tracker /app/uber-eats-tracker
+COPY --from=builder /usr/src/app/target/release/lastmile /app/lastmile
 
 # Copy static files
 COPY --chown=appuser:appuser static /app/static
@@ -69,4 +69,4 @@ ENV DATABASE_PATH=/app/data \
     RUST_LOG=info
 
 # Run the binary
-CMD ["./uber-eats-tracker"]
+CMD ["./lastmile"]
