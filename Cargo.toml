@@ -1,6 +1,6 @@
 [package]
-name = "uber-eats-tracker"
-version = "0.2.0"
+name = "lastmile"
+version = "0.3.0"
 edition = "2024"
 
 [dependencies]

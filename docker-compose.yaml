@@ -1,10 +1,10 @@
 services:
-  uber-eats-tracker:
+  lastmile:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: uber-eats-tracker
-    hostname: uber-eats-tracker
+    container_name: lastmile
+    hostname: lastmile
     restart: unless-stopped
     environment:
       # Database configuration

@@ -49,6 +49,14 @@ where
     }
 }
 
+fn deserialize_optional_field<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    Ok(Some(Option::<String>::deserialize(deserializer)?))
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Shift {
     #[serde(serialize_with = "serialize_thing_as_string")]
@@ -146,10 +154,60 @@ pub struct DateRangeQuery {
     pub end: String,
 }
 
-fn deserialize_optional_field<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::Deserialize;
-    Ok(Some(Option::<String>::deserialize(deserializer)?))
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MaintenanceItem {
+    #[serde(serialize_with = "serialize_thing_as_string")]
+    pub id: Thing,
+    pub name: String,
+    pub mileage_interval: i32,
+    pub last_service_mileage: i32,
+    pub enabled: bool,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MaintenanceItemRecord {
+    pub name: String,
+    pub mileage_interval: i32,
+    pub last_service_mileage: i32,
+    pub enabled: bool,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Default)]
+pub struct MaintenanceItemUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mileage_interval: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_service_mileage: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<bool>,
+    // Don't skip serializing notes - we want to allow explicitly setting it to None
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateMaintenanceItemRequest {
+    pub name: String,
+    pub mileage_interval: i32,
+    pub last_service_mileage: Option<i32>,
+    pub enabled: bool,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateMaintenanceItemRequest {
+    pub name: Option<String>,
+    pub mileage_interval: Option<i32>,
+    pub last_service_mileage: Option<i32>,
+    pub enabled: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_optional_field")]
+    pub notes: Option<Option<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RequiredMaintenanceResponse {
+    pub required_maintenance_items: Vec<MaintenanceItem>,
 }

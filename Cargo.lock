@@ -1936,6 +1936,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "lastmile"
+version = "0.3.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "futures",
+ "http-body",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "thiserror 2.0.17",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4247,26 +4267,6 @@ name = "typenum"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
-
-[[package]]
-name = "uber-eats-tracker"
-version = "0.2.0"
-dependencies = [
- "axum",
- "chrono",
- "futures",
- "http-body",
- "rust_decimal",
- "serde",
- "serde_json",
- "surrealdb",
- "thiserror 2.0.17",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
 
 [[package]]
 name = "ucd-trie"

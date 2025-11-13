@@ -80,4 +80,62 @@ const API = {
     if (!response.ok) throw new Error("Failed to export CSV");
     return await response.blob();
   },
+
+  // Maintenance endpoints
+  async getMaintenanceItems() {
+    const response = await fetch(`${API_URL}/maintenance`);
+    if (!response.ok) throw new Error("Failed to fetch maintenance items");
+    return await response.json();
+  },
+
+  async getRequiredMaintenance() {
+    const response = await fetch(`${API_URL}/maintenance/calculate`);
+    if (!response.ok)
+      throw new Error("Failed to calculate required maintenance");
+    return await response.json();
+  },
+
+  async createMaintenanceItem(data) {
+    const response = await fetch(`${API_URL}/maintenance/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to create maintenance item");
+    return await response.json();
+  },
+
+  async updateMaintenanceItem(itemId, data) {
+    // Sanitize the data before sending
+    const sanitizedData = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (key === "notes") {
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          sanitizedData[key] = trimmed.length === 0 ? null : trimmed;
+        } else {
+          sanitizedData[key] = value;
+        }
+      } else {
+        sanitizedData[key] = value;
+      }
+    }
+
+    const response = await fetch(`${API_URL}/maintenance/${itemId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sanitizedData),
+    });
+    if (!response.ok) throw new Error("Failed to update maintenance item");
+    return await response.json();
+  },
+
+  async deleteMaintenanceItem(itemId) {
+    const response = await fetch(`${API_URL}/maintenance/${itemId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete maintenance item");
+    return await response.json();
+  },
 };

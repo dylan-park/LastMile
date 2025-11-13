@@ -1,10 +1,11 @@
-# Uber Eats Tracker
+# LastMile
 
-A self-hosted web application for tracking Uber Eats delivery shifts. Built with Rust and SurrealDB, it helps drivers monitor earnings, hours worked, mileage, and calculate real-time statistics across all their shifts.
+A self-hosted web application for tracking independent delivery courier shifts. Built with Rust and SurrealDB, it helps drivers monitor earnings, hours worked, mileage, and calculate real-time statistics across all their shifts.
 
 ## Features
 
 - **Shift Tracking**: Start and end shifts with odometer readings, earnings, tips, and gas costs
+- **Maintenance Task Tracking**: Stay up to date on your vehicle maitenance with simple to program alerts
 - **Real-time Stats**: View earnings, hours worked, hourly rate, and miles driven
 - **Flexible Filtering**: Filter shifts by month, all time, or custom date ranges
 - **Editable Data**: Click any field in the table to edit shift details inline
@@ -36,8 +37,8 @@ The database will be created automatically in the `./data` directory.
 
 Build and run with Docker:
 ```bash
-docker build -t uber-eats-tracker .
-docker run -p 3000:3000 -v uber-eats-data:/app/data uber-eats-tracker
+docker build -t lastmile .
+docker run -p 3000:3000 -v ./data:/app/data lastmile
 ```
 
 Access the application at http://localhost:3000
@@ -70,4 +71,5 @@ Environment variables (optional):
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
   - [ ] Investigate desktop site improvements
-- [ ] Track maitnence tasks
+- [x] Track maintenance tasks
+  - [ ] Calculate remaining milage per maintenance task
