@@ -1,6 +1,6 @@
 # LastMile
 
-A self-hosted web application for tracking independent delivery courier shifts. Built with Rust and SurrealDB, it helps drivers monitor earnings, hours worked, mileage, and calculate real-time statistics across all their shifts.
+A self-hosted web application for tracking independent delivery courier shifts, and other related data. Built with Rust and SurrealDB, it helps drivers monitor earnings, hours worked, mileage, maintenance, and calculate real-time statistics across all their shifts.
 
 ## Features
 
@@ -73,3 +73,5 @@ Environment variables (optional):
   - [ ] Investigate desktop site improvements
 - [x] Track maintenance tasks
   - [ ] Calculate remaining milage per maintenance task
+- [ ] Allow editing of shift TimeDates
+- [ ] Allow deletion of shifts
