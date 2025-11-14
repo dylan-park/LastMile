@@ -49,6 +49,7 @@
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
+    --spacing-xxl: 40px;
 }
 
 html.dark-mode {
@@ -107,10 +108,15 @@ body {
 
 /* ===== HEADER ===== */
 .header {
-    margin-bottom: var(--spacing-xl);
+    position: relative;
+    height: auto;
 }
 
 .header-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -123,13 +129,15 @@ h1 {
     align-items: center;
     gap: var(--spacing-sm);
     color: var(--accent);
-    font-size: 2rem;
+    font-size: 3rem;
     font-weight: 700;
     letter-spacing: -0.02em;
 }
 
 h1 svg {
     color: var(--accent);
+    width: 45px;
+    height: 45px;
 }
 
 .theme-toggle {
@@ -1053,8 +1061,22 @@ td[contenteditable="true"]:focus {
         padding: var(--spacing-md);
     }
 
+    .header {
+        height: auto;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .header-content {
+        position: static;
+    }
+
     h1 {
         font-size: 1.5rem;
+    }
+
+    h1 svg {
+        width: 30px;
+        height: 30px;
     }
 
     .view-toggle,
