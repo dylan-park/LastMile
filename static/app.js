@@ -1,34 +1,41 @@
-let activeShift = null;
-let allShifts = [];
-let statsPeriod = "month"; // Default to monthly view
-let customDateRange = { start: null, end: null };
-let currentView = "shifts";
+// ===== STATE MANAGEMENT =====
+const state = {
+  activeShift: null,
+  allShifts: [],
+  allMaintenanceItems: [],
+  requiredMaintenanceIds: new Set(),
+  requiredMaintenanceCount: 0,
+  statsPeriod: "month", // "month", "all", or "custom"
+  customDateRange: { start: null, end: null },
+  currentView: "shifts", // "shifts" or "maintenance"
+};
 
+// ===== DATA LOADING =====
 async function loadShifts() {
   try {
     // Determine which API endpoint to call based on the period
-    if (statsPeriod === "all") {
-      // Fetch all shifts
-      allShifts = await API.getShifts();
+    if (state.statsPeriod === "all") {
+      state.allShifts = await API.getShifts();
     } else {
-      // Fetch shifts by date range (month or custom)
-      const dateRange = getChicagoDateRange(statsPeriod, customDateRange);
+      const dateRange = getLocalDateRange(
+        state.statsPeriod,
+        state.customDateRange,
+      );
 
       if (!dateRange) {
-        // If no valid range (shouldn't happen), fall back to all shifts
-        allShifts = await API.getShifts();
+        state.allShifts = await API.getShifts();
       } else {
-        // Fetch shifts within the date range
-        allShifts = await API.getShiftsByRange(dateRange.start, dateRange.end);
+        state.allShifts = await API.getShiftsByRange(
+          dateRange.start,
+          dateRange.end,
+        );
       }
     }
 
-    // Update stats with the backend-filtered shifts
-    UI.updateStats(allShifts);
+    UI.updateStats(state.allShifts);
 
-    // Apply search filter on frontend if needed
     const searchTerm = document.getElementById("searchInput").value;
-    UI.renderShifts(allShifts, searchTerm);
+    UI.renderShifts(state.allShifts, searchTerm);
   } catch (error) {
     console.error("Error loading shifts:", error);
     UI.showToast("Failed to load shifts", "error");
@@ -37,13 +44,73 @@ async function loadShifts() {
 
 async function checkActiveShift() {
   try {
-    activeShift = await API.getActiveShift();
-    UI.updateActiveShiftBanner(activeShift);
+    state.activeShift = await API.getActiveShift();
+    UI.updateActiveShiftBanner(state.activeShift);
   } catch (error) {
     console.error("Error checking active shift:", error);
   }
 }
 
+async function loadMaintenanceItems() {
+  try {
+    state.allMaintenanceItems = await API.getMaintenanceItems();
+
+    // Sort by mileage interval (ascending) by default
+    state.allMaintenanceItems.sort(
+      (a, b) => a.mileage_interval - b.mileage_interval,
+    );
+
+    const searchTerm = document.getElementById("maintenanceSearchInput").value;
+    UI.renderMaintenanceItems(
+      state.allMaintenanceItems,
+      searchTerm,
+      state.requiredMaintenanceIds,
+    );
+  } catch (error) {
+    console.error("Error loading maintenance items:", error);
+    UI.showToast("Failed to load maintenance items", "error");
+  }
+}
+
+async function loadRequiredMaintenance() {
+  try {
+    const response = await API.getRequiredMaintenance();
+    const requiredItems = response.required_maintenance_items || [];
+
+    state.requiredMaintenanceCount = requiredItems.length;
+    state.requiredMaintenanceIds = new Set(
+      requiredItems.map((item) => item.id),
+    );
+
+    updateMaintenanceBadge();
+
+    // Re-render if we're on the maintenance view
+    if (document.getElementById("maintenanceView").style.display !== "none") {
+      const searchTerm = document.getElementById(
+        "maintenanceSearchInput",
+      ).value;
+      UI.renderMaintenanceItems(
+        state.allMaintenanceItems,
+        searchTerm,
+        state.requiredMaintenanceIds,
+      );
+    }
+  } catch (error) {
+    console.error("Error loading required maintenance:", error);
+  }
+}
+
+function updateMaintenanceBadge() {
+  const badge = document.getElementById("maintenanceBadge");
+  if (state.requiredMaintenanceCount > 0) {
+    badge.textContent = state.requiredMaintenanceCount;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+// ===== SHIFT HANDLERS =====
 async function handleStartShift() {
   const odoStart = document.getElementById("startOdo").value;
 
@@ -86,17 +153,16 @@ async function handleEndShift() {
 
   try {
     UI.showLoading();
-    await API.endShift(activeShift.id, {
+    await API.endShift(state.activeShift.id, {
       odometer_end: parseInt(endOdo),
       earnings,
       tips,
       gas_cost: gasCost,
       notes,
     });
-    UI.closeModal();
+    UI.closeModal("endShiftModal");
     await checkActiveShift();
     await loadShifts();
-    // Update maintenance since odometer changed
     await loadRequiredMaintenance();
     UI.showToast("Shift ended successfully", "success");
   } catch (error) {
@@ -106,7 +172,7 @@ async function handleEndShift() {
   }
 }
 
-async function handleCellEdit(e) {
+async function handleShiftCellEdit(e) {
   const cell = e.target;
   const field = cell.dataset.field;
   const id = cell.dataset.id;
@@ -117,7 +183,6 @@ async function handleCellEdit(e) {
   } else if (["earnings", "tips", "gas_cost"].includes(field)) {
     value = value ? parseFloat(value) : 0;
   } else if (field === "notes") {
-    // Explicitly handle empty notes - send null instead of empty string
     value = value.length === 0 ? null : value;
   }
 
@@ -127,6 +192,7 @@ async function handleCellEdit(e) {
 
     await API.updateShift(id, payload);
     await loadShifts();
+
     // Update maintenance if odometer changed
     if (["odometer_start", "odometer_end"].includes(field)) {
       await loadRequiredMaintenance();
@@ -159,14 +225,117 @@ async function handleExportCSV() {
   }
 }
 
-function sortTable(field, direction) {
-  const sorted = [...allShifts].sort((a, b) => {
+// ===== MAINTENANCE HANDLERS =====
+async function handleCreateMaintenance() {
+  const name = document.getElementById("maintenanceName").value.trim();
+  const mileageInterval = parseInt(
+    document.getElementById("maintenanceMileageInterval").value,
+  );
+  const lastServiceMileage =
+    parseInt(document.getElementById("maintenanceLastService").value) || 0;
+  const enabled = document.getElementById("maintenanceEnabled").checked;
+  const notesValue = document.getElementById("maintenanceNotes").value.trim();
+  const notes = notesValue.length === 0 ? null : notesValue;
+
+  if (!name || !mileageInterval) {
+    UI.showToast("Please enter name and mileage interval", "error");
+    return;
+  }
+
+  if (mileageInterval <= 0) {
+    UI.showToast("Mileage interval must be positive", "error");
+    return;
+  }
+
+  try {
+    UI.showLoading();
+    await API.createMaintenanceItem({
+      name,
+      mileage_interval: mileageInterval,
+      last_service_mileage: lastServiceMileage,
+      enabled,
+      notes,
+    });
+    UI.closeModal("maintenanceModal");
+    await loadMaintenanceItems();
+    await loadRequiredMaintenance();
+    UI.showToast("Maintenance item created successfully", "success");
+  } catch (error) {
+    console.error("Error creating maintenance item:", error);
+    UI.showToast("Failed to create maintenance item", "error");
+  } finally {
+    UI.hideLoading();
+  }
+}
+
+async function handleMaintenanceCellEdit(e) {
+  const cell = e.target;
+  const field = cell.dataset.field;
+  const id = cell.dataset.id;
+  let value = cell.textContent.trim();
+
+  if (field === "mileage_interval" || field === "last_service_mileage") {
+    value = value ? parseInt(value) : 0;
+    if (value < 0) {
+      UI.showToast("Value cannot be negative", "error");
+      await loadMaintenanceItems();
+      return;
+    }
+  } else if (field === "enabled") {
+    // Toggle enabled state
+    const item = state.allMaintenanceItems.find((m) => m.id === id);
+    value = !item.enabled;
+  } else if (field === "notes") {
+    value = value.length === 0 ? null : value;
+  }
+
+  try {
+    const payload = {};
+    payload[field] = value;
+
+    await API.updateMaintenanceItem(id, payload);
+    await loadMaintenanceItems();
+    await loadRequiredMaintenance();
+  } catch (error) {
+    console.error("Error updating maintenance item:", error);
+    UI.showToast("Failed to update maintenance item", "error");
+    await loadMaintenanceItems();
+  }
+}
+
+async function handleDeleteMaintenance(id) {
+  if (!confirm("Are you sure you want to delete this maintenance item?")) {
+    return;
+  }
+
+  try {
+    UI.showLoading();
+    await API.deleteMaintenanceItem(id);
+    await loadMaintenanceItems();
+    await loadRequiredMaintenance();
+    UI.showToast("Maintenance item deleted successfully", "success");
+  } catch (error) {
+    console.error("Error deleting maintenance item:", error);
+    UI.showToast("Failed to delete maintenance item", "error");
+  } finally {
+    UI.hideLoading();
+  }
+}
+
+// ===== SORTING =====
+function sortTable(type, field, direction) {
+  const items = type === "shifts" ? state.allShifts : state.allMaintenanceItems;
+
+  const sorted = [...items].sort((a, b) => {
     let aVal = a[field];
     let bVal = b[field];
 
     if (field === "start_time" || field === "end_time") {
       aVal = aVal ? new Date(aVal) : new Date(0);
       bVal = bVal ? new Date(bVal) : new Date(0);
+    } else if (field === "enabled") {
+      aVal = aVal ? 1 : 0;
+      bVal = bVal ? 1 : 0;
     } else if (typeof aVal === "string") {
       aVal = aVal.toLowerCase();
       bVal = bVal ? bVal.toLowerCase() : "";
@@ -182,10 +351,80 @@ function sortTable(field, direction) {
     }
   });
 
-  const searchTerm = document.getElementById("searchInput").value;
-  UI.renderShifts(sorted, searchTerm);
+  if (type === "shifts") {
+    const searchTerm = document.getElementById("searchInput").value;
+    UI.renderShifts(sorted, searchTerm);
+  } else {
+    const searchTerm = document.getElementById("maintenanceSearchInput").value;
+    UI.renderMaintenanceItems(sorted, searchTerm, state.requiredMaintenanceIds);
+  }
 }
 
+// ===== VIEW & PERIOD CONTROLS =====
+function switchView(view) {
+  state.currentView = view;
+
+  document.querySelectorAll(".view-toggle-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === view);
+  });
+
+  const shiftsView = document.getElementById("shiftsView");
+  const maintenanceView = document.getElementById("maintenanceView");
+
+  if (view === "shifts") {
+    shiftsView.style.display = "block";
+    maintenanceView.style.display = "none";
+  } else {
+    shiftsView.style.display = "none";
+    maintenanceView.style.display = "block";
+  }
+}
+
+async function handleStatsPeriodToggle(period) {
+  state.statsPeriod = period;
+
+  document.querySelectorAll(".toggle-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.period === period);
+  });
+
+  const customDateRangeEl = document.getElementById("customDateRange");
+  if (period === "custom") {
+    customDateRangeEl.classList.remove("hidden");
+
+    // Set default dates to current month if not already set
+    if (!state.customDateRange.start && !state.customDateRange.end) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      document.getElementById("startDate").value = formatDateForInput(firstDay);
+      document.getElementById("endDate").value = formatDateForInput(lastDay);
+
+      state.customDateRange.start = firstDay;
+      state.customDateRange.end = lastDay;
+    }
+  } else {
+    customDateRangeEl.classList.add("hidden");
+  }
+
+  await loadShifts();
+}
+
+async function handleCustomDateChange() {
+  const startDateInput = document.getElementById("startDate").value;
+  const endDateInput = document.getElementById("endDate").value;
+
+  state.customDateRange.start = startDateInput
+    ? new Date(startDateInput + "T00:00:00")
+    : null;
+  state.customDateRange.end = endDateInput
+    ? new Date(endDateInput + "T23:59:59")
+    : null;
+
+  await loadShifts();
+}
+
+// ===== THEME =====
 function toggleTheme() {
   document.documentElement.classList.toggle("dark-mode");
   const isDark = document.documentElement.classList.contains("dark-mode");
@@ -207,134 +446,58 @@ function updateThemeButton() {
   }
 }
 
-async function handleStatsPeriodToggle(period) {
-  statsPeriod = period;
-
-  // Update toggle buttons
-  document.querySelectorAll(".toggle-option").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.period === period);
-  });
-
-  // Show/hide custom date range inputs
-  const customDateRangeEl = document.getElementById("customDateRange");
-  if (period === "custom") {
-    customDateRangeEl.classList.remove("hidden");
-
-    // Set default dates to current month if not already set
-    if (!customDateRange.start && !customDateRange.end) {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      document.getElementById("startDate").value = formatDateForInput(firstDay);
-      document.getElementById("endDate").value = formatDateForInput(lastDay);
-
-      customDateRange.start = firstDay;
-      customDateRange.end = lastDay;
-    }
-  } else {
-    customDateRangeEl.classList.add("hidden");
-  }
-
-  // Load shifts from backend with new filter
-  await loadShifts();
-}
-
-async function handleCustomDateChange() {
-  const startDateInput = document.getElementById("startDate").value;
-  const endDateInput = document.getElementById("endDate").value;
-
-  customDateRange.start = startDateInput
-    ? new Date(startDateInput + "T00:00:00")
-    : null;
-  customDateRange.end = endDateInput
-    ? new Date(endDateInput + "T23:59:59")
-    : null;
-
-  // Load shifts from backend with new custom range
-  await loadShifts();
-}
-
-function switchView(view) {
-  currentView = view;
-
-  // Update toggle buttons
-  document.querySelectorAll(".view-toggle-option").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.view === view);
-  });
-
-  // Show/hide views
-  const shiftsView = document.getElementById("shiftsView");
-  const maintenanceView = document.getElementById("maintenanceView");
-
-  if (view === "shifts") {
-    shiftsView.style.display = "block";
-    maintenanceView.style.display = "none";
-  } else {
-    shiftsView.style.display = "none";
-    maintenanceView.style.display = "block";
-  }
-}
-
-const debouncedSearch = debounce((searchTerm) => {
-  UI.renderShifts(allShifts, searchTerm);
-}, 300);
-
-function formatDateForInput(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-// Initialize
+// ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {
-  // Update theme button to match current state
   updateThemeButton();
 
-  // Setup all event listeners
+  // Theme toggle
   document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+
+  // Shift controls
   document
     .getElementById("startShiftBtn")
     .addEventListener("click", handleStartShift);
   document
     .getElementById("endShiftBtn")
-    .addEventListener("click", () => UI.openModal());
+    .addEventListener("click", () => UI.openModal("endShiftModal"));
   document
     .getElementById("exportBtn")
     .addEventListener("click", handleExportCSV);
+
+  // Shift modal controls
   document
     .getElementById("modalClose")
-    .addEventListener("click", () => UI.closeModal());
+    .addEventListener("click", () => UI.closeModal("endShiftModal"));
   document
     .getElementById("modalCancel")
-    .addEventListener("click", () => UI.closeModal());
+    .addEventListener("click", () => UI.closeModal("endShiftModal"));
   document
     .getElementById("modalSubmit")
     .addEventListener("click", handleEndShift);
-
-  document.getElementById("searchInput").addEventListener("input", (e) => {
-    debouncedSearch(e.target.value);
-  });
-
   document
     .querySelector(".modal-backdrop")
-    .addEventListener("click", () => UI.closeModal());
+    .addEventListener("click", () => UI.closeModal("endShiftModal"));
 
+  // Search
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    debounce(() => UI.renderShifts(state.allShifts, e.target.value), 300)();
+  });
+
+  // Enter key on start odometer
   document.getElementById("startOdo").addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
       handleStartShift();
     }
   });
 
-  // Stats period toggle listeners
+  // Stats period toggle
   document.querySelectorAll(".toggle-option").forEach((btn) => {
     btn.addEventListener("click", () => {
       handleStatsPeriodToggle(btn.dataset.period);
     });
   });
 
-  // Custom date range listeners
+  // Custom date range
   document
     .getElementById("startDate")
     .addEventListener("change", handleCustomDateChange);
@@ -342,40 +505,58 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("endDate")
     .addEventListener("change", handleCustomDateChange);
 
-  // View toggle listeners
+  // View toggle
   document.querySelectorAll(".view-toggle-option").forEach((btn) => {
     btn.addEventListener("click", () => {
       switchView(btn.dataset.view);
     });
   });
 
-  // Maintenance listeners
+  // Maintenance controls
   document
     .getElementById("addMaintenanceBtn")
-    .addEventListener("click", () => UI.openMaintenanceModal());
+    .addEventListener("click", () => UI.openModal("maintenanceModal"));
   document
     .getElementById("maintenanceModalClose")
-    .addEventListener("click", () => UI.closeMaintenanceModal());
+    .addEventListener("click", () => UI.closeModal("maintenanceModal"));
   document
     .getElementById("maintenanceModalCancel")
-    .addEventListener("click", () => UI.closeMaintenanceModal());
+    .addEventListener("click", () => UI.closeModal("maintenanceModal"));
   document
     .getElementById("maintenanceModalSubmit")
     .addEventListener("click", handleCreateMaintenance);
   document
     .querySelector(".maintenance-modal-backdrop")
-    .addEventListener("click", () => UI.closeMaintenanceModal());
+    .addEventListener("click", () => UI.closeModal("maintenanceModal"));
 
+  // Maintenance search
   document
     .getElementById("maintenanceSearchInput")
     .addEventListener("input", (e) => {
-      debouncedMaintenanceSearch(e.target.value);
+      debounce(
+        () =>
+          UI.renderMaintenanceItems(
+            state.allMaintenanceItems,
+            e.target.value,
+            state.requiredMaintenanceIds,
+          ),
+        300,
+      )();
     });
 
-  UI.setupTableSorting();
-  UI.setupMaintenanceTableSorting();
+  // Table sorting
+  UI.setupTableSorting("shifts", (field, direction) =>
+    sortTable("shifts", field, direction),
+  );
+  UI.setupTableSorting("maintenance", (field, direction) =>
+    sortTable("maintenance", field, direction),
+  );
 
-  // Load data asynchronously
+  // Cell editing
+  UI.onCellEdit("shifts", handleShiftCellEdit);
+  UI.onCellEdit("maintenance", handleMaintenanceCellEdit);
+
+  // Load initial data
   Promise.all([
     checkActiveShift(),
     loadShifts(),
