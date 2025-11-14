@@ -71,7 +71,10 @@ Environment variables (optional):
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
   - [ ] Investigate desktop site improvements
-- [x] Track maintenance tasks
+    - [x] Improve logo and header styling
+    - [ ] 
+- [ ] Track maintenance tasks
+  - [x] Create maintenance page and backend systems
   - [ ] Calculate remaining milage per maintenance task
 - [ ] Allow editing of shift TimeDates
 - [ ] Allow deletion of shifts
