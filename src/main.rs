@@ -33,8 +33,8 @@ use crate::{
             get_all_maintenance_items, update_maintenance_item,
         },
         shifts::{
-            end_shift, export_csv, get_active_shift, get_all_shifts, get_shifts_by_range,
-            start_shift, update_shift,
+            delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
+            get_shifts_by_range, start_shift, update_shift,
         },
     },
     state::AppState,
@@ -155,6 +155,7 @@ async fn main() {
         .route("/api/shifts/start", post(start_shift))
         .route("/api/shifts/{id}/end", post(end_shift))
         .route("/api/shifts/{id}", put(update_shift))
+        .route("api/shifts/{id}", delete(delete_shift))
         .route("/api/shifts/export", get(export_csv))
         // Maintenance
         .route("/api/maintenance", get(get_all_maintenance_items))

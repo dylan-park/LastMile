@@ -259,6 +259,21 @@ pub async fn update_shift(
     Ok(Json(updated_shift))
 }
 
+pub async fn delete_shift(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<Shift>> {
+    info!("Deleting shift: id={}", id);
+
+    // Delete the shift - returns Option<T> when using record ID
+    let deleted_shift: Option<Shift> = state.db.delete(("shift", id.as_str())).await?;
+
+    let deleted_shift = deleted_shift.ok_or(AppError::ShiftNotFound)?;
+
+    info!("Shift deleted successfully: id={}", id);
+    Ok(Json(deleted_shift))
+}
+
 pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse> {
     info!("Exporting shifts to CSV");
 
