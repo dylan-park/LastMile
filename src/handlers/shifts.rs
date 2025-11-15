@@ -266,7 +266,7 @@ pub async fn delete_shift(
     info!("Deleting shift: id={}", id);
 
     // Delete the shift - returns Option<T> when using record ID
-    let deleted_shift: Option<Shift> = state.db.delete(("shift", id.as_str())).await?;
+    let deleted_shift: Option<Shift> = state.db.delete(("shifts", id.as_str())).await?;
 
     let deleted_shift = deleted_shift.ok_or(AppError::ShiftNotFound)?;
 
