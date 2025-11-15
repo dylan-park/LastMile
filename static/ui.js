@@ -1,4 +1,5 @@
 const UI = {
+  // ===== NOTIFICATIONS =====
   showToast(message, type = "info") {
     const toast = document.getElementById("toast");
     toast.textContent = message;
@@ -17,6 +18,7 @@ const UI = {
     document.getElementById("loadingOverlay").classList.add("hidden");
   },
 
+  // ===== STATS =====
   updateStats(shifts) {
     // Filter to only completed shifts (those with end_time)
     const completedShifts = shifts.filter((s) => s.end_time);
@@ -70,10 +72,11 @@ const UI = {
     }
   },
 
+  // ===== SHIFTS RENDERING =====
   renderShifts(shifts, searchTerm = "") {
     const tbody = document.getElementById("shiftsBody");
 
-    // Apply search filtering on the already backend-filtered shifts
+    // Apply search filtering
     const filtered = shifts.filter((shift) => {
       if (!searchTerm) return true;
       const search = searchTerm.toLowerCase();
@@ -86,22 +89,14 @@ const UI = {
     });
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `
-                <tr class="empty-state">
-                    <td colspan="12">
-                        <div class="empty-content">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
-                            <p>${searchTerm ? "No shifts found" : "No shifts recorded yet"}</p>
-                            <small>${searchTerm ? "Try a different search term" : "Start your first shift to begin tracking"}</small>
-                        </div>
-                    </td>
-                </tr>
-            `;
+      tbody.innerHTML = this._getEmptyState(
+        12,
+        searchTerm ? "No shifts found" : "No shifts recorded yet",
+        searchTerm
+          ? "Try a different search term"
+          : "Start your first shift to begin tracking",
+        "calendar",
+      );
       return;
     }
 
@@ -125,10 +120,9 @@ const UI = {
         `,
       )
       .join("");
-
-    this.attachCellEditListeners();
   },
 
+  // ===== MAINTENANCE RENDERING =====
   renderMaintenanceItems(items, searchTerm = "", requiredIds = new Set()) {
     const tbody = document.getElementById("maintenanceBody");
 
@@ -143,19 +137,14 @@ const UI = {
     });
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `
-                <tr class="empty-state">
-                    <td colspan="6">
-                        <div class="empty-content">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                            </svg>
-                            <p>${searchTerm ? "No maintenance items found" : "No maintenance items yet"}</p>
-                            <small>${searchTerm ? "Try a different search term" : "Click 'Add Maintenance Item' to create one"}</small>
-                        </div>
-                    </td>
-                </tr>
-            `;
+      tbody.innerHTML = this._getEmptyState(
+        6,
+        searchTerm ? "No maintenance items found" : "No maintenance items yet",
+        searchTerm
+          ? "Try a different search term"
+          : "Click 'Add Maintenance Item' to create one",
+        "tool",
+      );
       return;
     }
 
@@ -185,54 +174,40 @@ const UI = {
         `;
       })
       .join("");
-
-    this.attachMaintenanceCellEditListeners();
   },
 
-  attachCellEditListeners() {
-    document
-      .querySelectorAll('#shiftsBody td[contenteditable="true"]')
-      .forEach((cell) => {
-        cell.addEventListener("blur", handleCellEdit);
-        cell.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            cell.blur();
-          }
-        });
-      });
+  // ===== MODALS =====
+  openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
   },
 
-  attachMaintenanceCellEditListeners() {
-    // Text editable cells
-    document
-      .querySelectorAll('#maintenanceBody td[contenteditable="true"]')
-      .forEach((cell) => {
-        cell.addEventListener("blur", handleMaintenanceCellEdit);
-        cell.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            cell.blur();
-          }
-        });
-      });
+  closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove("show");
+    document.body.style.overflow = "";
 
-    // Enabled toggle cells
-    document
-      .querySelectorAll("#maintenanceBody .enabled-cell")
-      .forEach((cell) => {
-        cell.addEventListener("click", handleMaintenanceCellEdit);
-        cell.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleMaintenanceCellEdit(e);
-          }
-        });
-      });
+    // Clear form fields based on modal type
+    if (modalId === "endShiftModal") {
+      document.getElementById("endOdo").value = "";
+      document.getElementById("earnings").value = "0";
+      document.getElementById("tips").value = "0";
+      document.getElementById("gasCost").value = "0";
+      document.getElementById("notes").value = "";
+    } else if (modalId === "maintenanceModal") {
+      document.getElementById("maintenanceName").value = "";
+      document.getElementById("maintenanceMileageInterval").value = "";
+      document.getElementById("maintenanceLastService").value = "0";
+      document.getElementById("maintenanceEnabled").checked = true;
+      document.getElementById("maintenanceNotes").value = "";
+    }
   },
 
-  setupTableSorting() {
-    document.querySelectorAll("#shiftsTable th[data-sort]").forEach((th) => {
+  // ===== TABLE SORTING =====
+  setupTableSorting(type, sortCallback) {
+    const tableId = type === "shifts" ? "shiftsTable" : "maintenanceTable";
+    document.querySelectorAll(`#${tableId} th[data-sort]`).forEach((th) => {
       th.addEventListener("click", () => {
         const sortField = th.dataset.sort;
         const currentSort = th.classList.contains("sort-asc")
@@ -241,83 +216,91 @@ const UI = {
             ? "desc"
             : null;
 
-        document.querySelectorAll("#shiftsTable th").forEach((header) => {
+        document.querySelectorAll(`#${tableId} th`).forEach((header) => {
           header.classList.remove("sort-asc", "sort-desc");
         });
 
         if (currentSort === "asc") {
           th.classList.add("sort-desc");
-          sortTable(sortField, "desc");
+          sortCallback(sortField, "desc");
         } else {
           th.classList.add("sort-asc");
-          sortTable(sortField, "asc");
+          sortCallback(sortField, "asc");
         }
       });
     });
   },
 
-  setupMaintenanceTableSorting() {
-    document
-      .querySelectorAll("#maintenanceTable th[data-sort]")
-      .forEach((th) => {
-        th.addEventListener("click", () => {
-          const sortField = th.dataset.sort;
-          const currentSort = th.classList.contains("sort-asc")
-            ? "asc"
-            : th.classList.contains("sort-desc")
-              ? "desc"
-              : null;
+  // ===== CELL EDITING =====
+  onCellEdit(type, callback) {
+    const tableId = type === "shifts" ? "shiftsBody" : "maintenanceBody";
 
-          document
-            .querySelectorAll("#maintenanceTable th")
-            .forEach((header) => {
-              header.classList.remove("sort-asc", "sort-desc");
-            });
+    // Attach listeners via event delegation
+    const tbody = document.getElementById(tableId);
 
-          if (currentSort === "asc") {
-            th.classList.add("sort-desc");
-            sortMaintenanceTable(sortField, "desc");
-          } else {
-            th.classList.add("sort-asc");
-            sortMaintenanceTable(sortField, "asc");
-          }
-        });
+    tbody.addEventListener(
+      "blur",
+      (e) => {
+        if (e.target.contentEditable === "true") {
+          callback(e);
+        }
+      },
+      true,
+    );
+
+    tbody.addEventListener("keydown", (e) => {
+      if (
+        e.target.contentEditable === "true" &&
+        e.key === "Enter" &&
+        !e.shiftKey
+      ) {
+        e.preventDefault();
+        e.target.blur();
+      }
+    });
+
+    // For enabled toggle cells (maintenance only)
+    if (type === "maintenance") {
+      tbody.addEventListener("click", (e) => {
+        if (e.target.classList.contains("enabled-cell")) {
+          callback(e);
+        }
       });
+
+      tbody.addEventListener("keydown", (e) => {
+        if (
+          e.target.classList.contains("enabled-cell") &&
+          (e.key === "Enter" || e.key === " ")
+        ) {
+          e.preventDefault();
+          callback(e);
+        }
+      });
+    }
   },
 
-  openModal() {
-    const modal = document.getElementById("endShiftModal");
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
-  },
+  // ===== PRIVATE HELPERS =====
+  _getEmptyState(colspan, title, subtitle, iconType = "calendar") {
+    const icons = {
+      calendar: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                 <line x1="16" y1="2" x2="16" y2="6"></line>
+                 <line x1="8" y1="2" x2="8" y2="6"></line>
+                 <line x1="3" y1="10" x2="21" y2="10"></line>`,
+      tool: `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>`,
+    };
 
-  closeModal() {
-    const modal = document.getElementById("endShiftModal");
-    modal.classList.remove("show");
-    document.body.style.overflow = "";
-
-    document.getElementById("endOdo").value = "";
-    document.getElementById("earnings").value = "0";
-    document.getElementById("tips").value = "0";
-    document.getElementById("gasCost").value = "0";
-    document.getElementById("notes").value = "";
-  },
-
-  openMaintenanceModal() {
-    const modal = document.getElementById("maintenanceModal");
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
-  },
-
-  closeMaintenanceModal() {
-    const modal = document.getElementById("maintenanceModal");
-    modal.classList.remove("show");
-    document.body.style.overflow = "";
-
-    document.getElementById("maintenanceName").value = "";
-    document.getElementById("maintenanceMileageInterval").value = "";
-    document.getElementById("maintenanceLastService").value = "0";
-    document.getElementById("maintenanceEnabled").checked = true;
-    document.getElementById("maintenanceNotes").value = "";
+    return `
+      <tr class="empty-state">
+        <td colspan="${colspan}">
+          <div class="empty-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              ${icons[iconType]}
+            </svg>
+            <p>${title}</p>
+            <small>${subtitle}</small>
+          </div>
+        </td>
+      </tr>
+    `;
   },
 };

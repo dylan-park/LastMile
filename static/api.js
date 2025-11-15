@@ -1,6 +1,7 @@
 const API_URL = "/api";
 
 const API = {
+  // ===== SHIFTS =====
   async getShifts() {
     const response = await fetch(`${API_URL}/shifts`);
     if (!response.ok) throw new Error("Failed to fetch shifts");
@@ -49,23 +50,7 @@ const API = {
   },
 
   async updateShift(shiftId, data) {
-    // Sanitize the data before sending
-    const sanitizedData = {};
-
-    for (const [key, value] of Object.entries(data)) {
-      if (key === "notes") {
-        // For notes, explicitly send null if empty, or the trimmed value
-        if (typeof value === "string") {
-          const trimmed = value.trim();
-          sanitizedData[key] = trimmed.length === 0 ? null : trimmed;
-        } else {
-          sanitizedData[key] = value;
-        }
-      } else {
-        sanitizedData[key] = value;
-      }
-    }
-
+    const sanitizedData = sanitizeData(data);
     const response = await fetch(`${API_URL}/shifts/${shiftId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -81,7 +66,7 @@ const API = {
     return await response.blob();
   },
 
-  // Maintenance endpoints
+  // ===== MAINTENANCE =====
   async getMaintenanceItems() {
     const response = await fetch(`${API_URL}/maintenance`);
     if (!response.ok) throw new Error("Failed to fetch maintenance items");
@@ -106,22 +91,7 @@ const API = {
   },
 
   async updateMaintenanceItem(itemId, data) {
-    // Sanitize the data before sending
-    const sanitizedData = {};
-
-    for (const [key, value] of Object.entries(data)) {
-      if (key === "notes") {
-        if (typeof value === "string") {
-          const trimmed = value.trim();
-          sanitizedData[key] = trimmed.length === 0 ? null : trimmed;
-        } else {
-          sanitizedData[key] = value;
-        }
-      } else {
-        sanitizedData[key] = value;
-      }
-    }
-
+    const sanitizedData = sanitizeData(data);
     const response = await fetch(`${API_URL}/maintenance/${itemId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -139,3 +109,24 @@ const API = {
     return await response.json();
   },
 };
+
+// ===== HELPER FUNCTIONS =====
+function sanitizeData(data) {
+  const sanitized = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (key === "notes") {
+      // For notes, explicitly send null if empty, or the trimmed value
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        sanitized[key] = trimmed.length === 0 ? null : trimmed;
+      } else {
+        sanitized[key] = value;
+      }
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
