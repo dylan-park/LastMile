@@ -33,6 +33,8 @@ A self-hosted web application for tracking independent delivery courier shifts, 
 
 The database will be created automatically in the `./data` directory.
 
+If you have Surreal installed, and you would like to backup the database for any reason, you can run : `surreal export --endpoint file://./data --namespace lastmile --database main export.surql` from the project directory.
+
 ### Docker
 
 Build and run with Docker:
