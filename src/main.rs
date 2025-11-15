@@ -155,7 +155,7 @@ async fn main() {
         .route("/api/shifts/start", post(start_shift))
         .route("/api/shifts/{id}/end", post(end_shift))
         .route("/api/shifts/{id}", put(update_shift))
-        .route("api/shifts/{id}", delete(delete_shift))
+        .route("/api/shifts/{id}", delete(delete_shift))
         .route("/api/shifts/export", get(export_csv))
         // Maintenance
         .route("/api/maintenance", get(get_all_maintenance_items))
