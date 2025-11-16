@@ -60,6 +60,14 @@ const API = {
     return await response.json();
   },
 
+  async deleteShift(shiftId) {
+    const response = await fetch(`${API_URL}/shifts/${shiftId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete shift");
+    return await response.json();
+  },
+
   async exportCSV() {
     const response = await fetch(`${API_URL}/shifts/export`);
     if (!response.ok) throw new Error("Failed to export CSV");

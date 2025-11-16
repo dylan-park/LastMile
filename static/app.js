@@ -204,6 +204,25 @@ async function handleShiftCellEdit(e) {
   }
 }
 
+async function handleDeleteShift(id) {
+  if (!confirm("Are you sure you want to delete this shift?")) {
+    return;
+  }
+
+  try {
+    UI.showLoading();
+    await API.deleteShift(id);
+    await loadShifts();
+    await loadRequiredMaintenance();
+    UI.showToast("Shift deleted successfully", "success");
+  } catch (error) {
+    console.error("Error deleting shift:", error);
+    UI.showToast("Failed to delete shift", "error");
+  } finally {
+    UI.hideLoading();
+  }
+}
+
 async function handleExportCSV() {
   try {
     UI.showLoading();
