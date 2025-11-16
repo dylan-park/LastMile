@@ -498,6 +498,7 @@ html.dark-mode .miles-icon {
     border-radius: 12px;
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
     box-shadow: var(--shadow-sm);
 }
 
@@ -1115,6 +1116,10 @@ td[contenteditable="true"]:focus {
     .active-shift-banner {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .controls-section {
+        margin-top: 0px;
     }
 
     .shift-controls,
