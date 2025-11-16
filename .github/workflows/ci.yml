@@ -50,6 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
 
+    env:
+      APP_HOST: host.docker.internal
+
     services:
       selenium:
         image: selenium/standalone-chrome:latest
