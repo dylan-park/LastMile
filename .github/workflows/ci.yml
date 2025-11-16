@@ -114,8 +114,7 @@ jobs:
 
       # Install Python dependencies
       - name: Install Python dependencies
-        run: |
-          pip install selenium pytest
+        run: pip install -r requirements.txt
 
       # Run the frontend e2e tests
       - name: Run Frontend Tests
