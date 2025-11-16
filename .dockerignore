@@ -22,8 +22,8 @@ data/
 
 # Python
 venv/
-*/.pytest_cache/
-*/__pycache__/
+*.pytest_cache/
+*__pycache__/
 requirements.txt
 
 # OS
