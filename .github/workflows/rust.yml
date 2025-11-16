@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Checkout the repository
+    - uses: actions/checkout@v3
+
+    # Cache dependencies for faster builds
     - uses: actions/cache@v4
       with:
         path: |
@@ -21,6 +25,8 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
 
     # Install system dependencies
     - name: Install dependencies
@@ -33,8 +39,10 @@ jobs:
           libclang-dev \
           libssl-dev
 
+    # Build the project
     - name: Build
       run: cargo build --verbose
 
+    # Run tests
     - name: Run tests
       run: cargo test --verbose
