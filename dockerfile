@@ -17,21 +17,20 @@ WORKDIR /usr/src/app
 # Copy dependency files first for better layer caching
 COPY Cargo.toml Cargo.lock ./
 
-# Create a dummy main.rs to build dependencies
-RUN mkdir -p src && \
-    echo "fn main() {}" > src/main.rs
+# Create minimal lib.rs for cargo fetch
+RUN mkdir -p src && echo "// dummy lib for caching" > src/lib.rs
 
-# Build dependencies for cache
-RUN cargo build --release
+# Fetch dependencies only (no compilation yet)
+RUN cargo fetch
 
-# Remove the dummy source and target artifacts
-RUN rm -rf src target/release/deps/lastmile* target/release/lastmile*
+# Remove dummy lib.rs
+RUN rm -rf src
 
-# Copy the actual source code
+# Copy the full source code
 COPY . .
 
-# Build the project
-RUN cargo build --release
+# Build the project with exact locked dependencies
+RUN cargo build --release --locked
 
 # Use a minimal image for running
 FROM debian:bookworm-slim

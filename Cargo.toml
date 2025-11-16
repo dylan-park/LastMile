@@ -1,6 +1,6 @@
 [package]
 name = "lastmile"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 
 [dependencies]
@@ -18,3 +18,7 @@ tower = "0.5.2"
 tower-http = { version = "0.6.6", features = ["compression-gzip", "cors", "fs", "set-header"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+
+[dev-dependencies]
+surrealdb = { version = "2.3.10", features = ["kv-mem"] }
+rust_decimal_macros = "1.39.0"

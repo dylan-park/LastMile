@@ -211,3 +211,219 @@ pub struct UpdateMaintenanceItemRequest {
 pub struct RequiredMaintenanceResponse {
     pub required_maintenance_items: Vec<MaintenanceItem>,
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+    use rust_decimal_macros::dec;
+    use serde_json::json;
+
+    #[test]
+    fn test_deserialize_flexible_decimal_from_int() {
+        let json_data = json!({
+            "earnings": 100,
+            "tips": 20,
+            "gas_cost": 15,
+            "day_total": 105
+        });
+
+        #[derive(serde::Deserialize)]
+        struct TestData {
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            earnings: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            tips: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            gas_cost: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            day_total: rust_decimal::Decimal,
+        }
+
+        let data: TestData = serde_json::from_value(json_data).unwrap();
+        assert_eq!(data.earnings, dec!(100));
+        assert_eq!(data.tips, dec!(20));
+        assert_eq!(data.gas_cost, dec!(15));
+        assert_eq!(data.day_total, dec!(105));
+    }
+
+    #[test]
+    fn test_deserialize_flexible_decimal_from_decimal() {
+        let json_data = json!({
+            "earnings": 100.50,
+            "tips": 20.25,
+            "gas_cost": 15.75,
+            "day_total": 105.00
+        });
+
+        #[derive(serde::Deserialize)]
+        struct TestData {
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            earnings: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            tips: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            gas_cost: rust_decimal::Decimal,
+            #[serde(deserialize_with = "deserialize_flexible_decimal")]
+            day_total: rust_decimal::Decimal,
+        }
+
+        let data: TestData = serde_json::from_value(json_data).unwrap();
+        assert_eq!(data.earnings, dec!(100.50));
+        assert_eq!(data.tips, dec!(20.25));
+        assert_eq!(data.gas_cost, dec!(15.75));
+        assert_eq!(data.day_total, dec!(105.00));
+    }
+
+    #[test]
+    fn test_deserialize_optional_flexible_decimal_some_int() {
+        let json_data = json!({
+            "hourly_pay": 15
+        });
+
+        #[derive(serde::Deserialize)]
+        struct TestData {
+            #[serde(default, deserialize_with = "deserialize_optional_flexible_decimal")]
+            hourly_pay: Option<rust_decimal::Decimal>,
+        }
+
+        let data: TestData = serde_json::from_value(json_data).unwrap();
+        assert_eq!(data.hourly_pay, Some(dec!(15)));
+    }
+
+    #[test]
+    fn test_deserialize_optional_flexible_decimal_some_decimal() {
+        let json_data = json!({
+            "hourly_pay": 15.50
+        });
+
+        #[derive(serde::Deserialize)]
+        struct TestData {
+            #[serde(default, deserialize_with = "deserialize_optional_flexible_decimal")]
+            hourly_pay: Option<rust_decimal::Decimal>,
+        }
+
+        let data: TestData = serde_json::from_value(json_data).unwrap();
+        assert_eq!(data.hourly_pay, Some(dec!(15.50)));
+    }
+
+    #[test]
+    fn test_deserialize_optional_flexible_decimal_none() {
+        let json_data = json!({});
+
+        #[derive(serde::Deserialize)]
+        struct TestData {
+            #[serde(default, deserialize_with = "deserialize_optional_flexible_decimal")]
+            hourly_pay: Option<rust_decimal::Decimal>,
+        }
+
+        let data: TestData = serde_json::from_value(json_data).unwrap();
+        assert_eq!(data.hourly_pay, None);
+    }
+
+    #[test]
+    fn test_start_shift_request_deserialization() {
+        let json_data = json!({
+            "odometer_start": 12345
+        });
+
+        let request: StartShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.odometer_start, 12345);
+    }
+
+    #[test]
+    fn test_end_shift_request_deserialization_all_fields() {
+        let json_data = json!({
+            "odometer_end": 12445,
+            "earnings": 100.50,
+            "tips": 20.25,
+            "gas_cost": 15.00,
+            "notes": "Good shift"
+        });
+
+        let request: EndShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.odometer_end, 12445);
+        assert_eq!(request.earnings, Some(dec!(100.50)));
+        assert_eq!(request.tips, Some(dec!(20.25)));
+        assert_eq!(request.gas_cost, Some(dec!(15.00)));
+        assert_eq!(request.notes, Some("Good shift".to_string()));
+    }
+
+    #[test]
+    fn test_end_shift_request_deserialization_minimal() {
+        let json_data = json!({
+            "odometer_end": 12445
+        });
+
+        let request: EndShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.odometer_end, 12445);
+        assert_eq!(request.earnings, None);
+        assert_eq!(request.tips, None);
+        assert_eq!(request.gas_cost, None);
+        assert_eq!(request.notes, None);
+    }
+
+    #[test]
+    fn test_update_shift_request_deserialization() {
+        let json_data = json!({
+            "odometer_start": 12345,
+            "odometer_end": 12445,
+            "earnings": 100.00,
+            "tips": 20.00,
+            "gas_cost": 15.00,
+            "notes": "Updated notes"
+        });
+
+        let request: UpdateShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.odometer_start, Some(12345));
+        assert_eq!(request.odometer_end, Some(12445));
+        assert_eq!(request.earnings, Some(dec!(100.00)));
+        assert_eq!(request.tips, Some(dec!(20.00)));
+        assert_eq!(request.gas_cost, Some(dec!(15.00)));
+        assert_eq!(request.notes, Some(Some("Updated notes".to_string())));
+    }
+
+    #[test]
+    fn test_update_shift_request_clear_notes() {
+        let json_data = json!({
+            "notes": null
+        });
+
+        let request: UpdateShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.notes, Some(None));
+    }
+
+    #[test]
+    fn test_create_maintenance_item_request_deserialization() {
+        let json_data = json!({
+            "name": "Oil Change",
+            "mileage_interval": 3000,
+            "last_service_mileage": 10000,
+            "enabled": true,
+            "notes": "Full synthetic"
+        });
+
+        let request: CreateMaintenanceItemRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.name, "Oil Change");
+        assert_eq!(request.mileage_interval, 3000);
+        assert_eq!(request.last_service_mileage, Some(10000));
+        assert_eq!(request.enabled, true);
+        assert_eq!(request.notes, Some("Full synthetic".to_string()));
+    }
+
+    #[test]
+    fn test_create_maintenance_item_request_minimal() {
+        let json_data = json!({
+            "name": "Tire Rotation",
+            "mileage_interval": 5000,
+            "enabled": true
+        });
+
+        let request: CreateMaintenanceItemRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.name, "Tire Rotation");
+        assert_eq!(request.mileage_interval, 5000);
+        assert_eq!(request.last_service_mileage, None);
+        assert_eq!(request.enabled, true);
+        assert_eq!(request.notes, None);
+    }
+}

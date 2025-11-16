@@ -14,6 +14,7 @@ use axum::{
 };
 use futures::{FutureExt, future::BoxFuture};
 use http_body::Body as HttpBody;
+use lastmile::{db, handlers, state};
 use surrealdb::{
     Surreal,
     engine::local::{Db, RocksDb},
@@ -39,14 +40,6 @@ use crate::{
     },
     state::AppState,
 };
-
-mod calculations;
-mod db;
-mod error;
-mod handlers;
-mod models;
-mod state;
-mod validation;
 
 // Custom Cache layer
 #[derive(Clone)]
