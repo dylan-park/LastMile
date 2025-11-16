@@ -8,6 +8,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
   test:
@@ -17,16 +20,14 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Cache dependencies for faster builds
-      - uses: actions/cache@v4
+      # Install Rust toolchain (improves caching)
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Use Swatinem's cache action
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          shared-key: "ci-build"
+          cache-on-failure: true
 
       # Install system dependencies
       - name: Install Dependencies
@@ -46,6 +47,7 @@ jobs:
       # Run tests
       - name: Run tests
         run: cargo test --verbose
+
   e2e:
     runs-on: ubuntu-latest
     needs: test
@@ -60,19 +62,16 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
     steps:
-      # Checkout the repository
       - uses: actions/checkout@v4
 
-      # Cache dependencies for faster builds
-      - uses: actions/cache@v4
+      # Install Rust toolchain
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Share cache with test job
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          shared-key: "ci-build"
+          cache-on-failure: true
 
       # Install system dependencies
       - name: Install Dependencies
@@ -85,7 +84,7 @@ jobs:
             libclang-dev \
             libssl-dev
 
-      # Build project
+      # Build project (reuses cache from test job)
       - name: Build
         run: cargo build --release
 
@@ -97,7 +96,7 @@ jobs:
       - name: Wait for Startup
         run: |
           for i in {1..30}; do
-            if curl -s http:///localhost:3000 > /dev/null; then
+            if curl -s http://localhost:3000 > /dev/null; then
               echo "Backend is up!"
               exit 0
             fi
@@ -107,11 +106,28 @@ jobs:
           echo "Backend failed to start" >&2
           exit 1
 
-      # Install Python and Selenium
-      - name: Install Python and Selenium client
+      # Setup Python with caching
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # Install Python dependencies
+      - name: Install Python dependencies
         run: |
           pip install selenium pytest
 
       # Run the frontend e2e tests
       - name: Run Frontend Tests
-        run: pytest scripts/e2e.py
+        run: pytest scripts/e2e.py -v
+
+      # Upload logs on failure
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs
+          path: |
+            *.log
+            nohup.out
+          if-no-files-found: ignore
