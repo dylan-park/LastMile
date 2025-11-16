@@ -40,7 +40,18 @@ If you have Surreal installed, and you would like to backup the database for any
 Build and run with Docker:
 ```bash
 docker build -t lastmile .
-docker run -p 3000:3000 -v ./data:/app/data lastmile
+docker run -d \
+  --name lastmile \
+  --hostname lastmile \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -v ./data:/app/data \
+  -v ./static:/app/static:ro \
+  -e DATABASE_PATH=/app/data \
+  -e PORT=3000 \
+  -e TZ=America/Chicago \
+  -e RUST_LOG=info \
+  lastmile
 ```
 
 Access the application at http://localhost:3000
@@ -72,11 +83,14 @@ Environment variables (optional):
 - [x] Improve frontend caching rules, and implement gzip
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
+    - [ ] Improve table view
   - [ ] Investigate desktop site improvements
     - [x] Improve logo and header styling
-    - [ ] 
+    - [ ] Improve table scrolling
 - [ ] Track maintenance tasks
   - [x] Create maintenance page and backend systems
   - [ ] Calculate remaining milage per maintenance task
 - [ ] Allow editing of shift TimeDates
 - [ ] Allow deletion of shifts
+  - [x] Create shift deletion endpoint
+  - [ ] Add shift deletion to UI
