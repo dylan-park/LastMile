@@ -20,6 +20,12 @@ data/
 *.swo
 *~
 
+# Python
+venv/
+*/.pytest_cache/
+*/__pycache__/
+requirements.txt
+
 # OS
 .DS_Store
 Thumbs.db

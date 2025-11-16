@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v4
+
+      # Cache dependencies for faster builds
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Install system dependencies
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            libclang-dev \
+            libssl-dev
+
+      # Build the project
+      - name: Build
+        run: cargo build --verbose
+
+      # Run tests
+      - name: Run tests
+        run: cargo test --verbose
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      selenium:
+        image: selenium//standalone-chrome:latest
+        ports:
+          - 4444:4444
+        options: >-
+          --shm-size=2g
+
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v4
+
+      # Cache dependencies for faster builds
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Install system dependencies
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            libclang-dev \
+            libssl-dev
+
+      # Build project
+      - name: Build
+        run: cargo build --release
+
+      # Start the backend/frontend
+      - name: Start LastMile
+        run: nohup cargo run --release &
+
+      # Wait for startup
+      - name: Wait for Startup
+        run: |
+          for i in {1..30}; do
+            if curl -s http:///localhost:3000 > /dev/null; then
+              echo "Backend is up!"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i)"
+            sleep 1
+          done
+          echo "Backend failed to start" >&2
+          exit 1
+
+      # Install Python and Selenium
+      - name: Install Python and Selenium client
+        run: |
+          pip install selenium pytest
+
+      # Run the frontend e2e tests
+      - name: Run Frontend Tests
+        run: pytest scripts/e2e.py

@@ -1,4 +1,7 @@
-/target
-/.vscode
-/data
+target/
+.vscode/
+data
 *.surql
+venv/
+*/.pytest_cache/
+*/__pycache__/
