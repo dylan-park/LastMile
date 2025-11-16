@@ -8,17 +8,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 
 REMOTE_URL = "http://localhost:4444/wd/hub"
-
-
-def get_app_host():
-    """
-    Returns the host for the app under test.
-    Defaults to localhost if running locally, or uses APP_HOST env variable if set.
-    """
-    return os.environ.get("APP_HOST", "127.0.0.1")
-
-
-BASE_URL = f"http://{get_app_host()}:3000"
+APP_HOST = (
+    "host.docker.internal" if os.getenv("GITHUB_ACTIONS") == "true" else "127.0.0.1"
+)
 
 
 def port_open(host, port, timeout=1.0):
@@ -64,6 +56,6 @@ def driver():
 
 # --- Tests ---
 def test_homepage_title(driver):
-    driver.get(BASE_URL)
+    driver.get(f"http://{APP_HOST}:3000")
     wait_for_page_load(driver)
     assert "LastMile" in driver.title
