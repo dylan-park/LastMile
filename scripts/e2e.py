@@ -187,23 +187,28 @@ def test_custom_date_range_shows(driver):
     driver.get(APP_URL)
     wait_for_page_load(driver)
 
-    # Custom date range should be hidden initially
     custom_range = driver.find_element(By.ID, "customDateRange")
     assert "hidden" in custom_range.get_attribute("class")
 
-    # Click "Custom Range" button
-    custom_btn = driver.find_element(By.CSS_SELECTOR, '[data-period="custom"]')
-    custom_btn.click()
+    # Click “Custom Range”
+    driver.find_element(By.CSS_SELECTOR, '[data-period="custom"]').click()
 
-    # Wait for custom date range to appear
+    # Wait for the container to become visible
     WebDriverWait(driver, 5).until(
         lambda d: "hidden"
         not in d.find_element(By.ID, "customDateRange").get_attribute("class")
     )
 
-    # Check that date inputs are present
-    start_date = driver.find_element(By.ID, "startDate")
-    end_date = driver.find_element(By.ID, "endDate")
+    # Now wait for the actual inputs to be visible
+    start_date = WebDriverWait(driver, 5).until(
+        EC.visibility_of_element_located((By.ID, "startDate"))
+    )
+
+    end_date = WebDriverWait(driver, 5).until(
+        EC.visibility_of_element_located((By.ID, "endDate"))
+    )
+
+    # Assertions (now guaranteed stable)
     assert start_date.is_displayed()
     assert end_date.is_displayed()
 
@@ -214,25 +219,23 @@ def test_custom_date_range_shows(driver):
 
 
 def test_start_shift_basic(driver):
-    """Test starting a basic shift."""
     driver.get(APP_URL)
     wait_for_page_load(driver)
 
-    # Enter starting odometer
-    odo_input = driver.find_element(By.ID, "startOdo")
-    odo_input.send_keys("10000")
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
 
-    # Click start shift button
-    start_btn = driver.find_element(By.ID, "startShiftBtn")
-    start_btn.click()
-
-    # Wait for active shift banner to appear
+    # Wait for banner to be visible
     WebDriverWait(driver, 10).until(
         lambda d: "hidden"
         not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
     )
 
-    # Check that banner shows correct info
+    # Wait for correct text to appear
+    WebDriverWait(driver, 10).until(
+        EC.text_to_be_present_in_element((By.ID, "activeShiftBanner"), "10000")
+    )
+
     banner = driver.find_element(By.ID, "activeShiftBanner")
     assert "10000" in banner.text
 
@@ -1069,22 +1072,24 @@ def test_notes_field_optional(driver):
 
 
 def test_enter_key_starts_shift(driver):
-    """Test that pressing Enter in odometer input starts shift."""
     driver.get(APP_URL)
     wait_for_page_load(driver)
 
-    # Enter odometer and press Enter
     odo_input = driver.find_element(By.ID, "startOdo")
     odo_input.send_keys("10000")
     odo_input.send_keys(Keys.RETURN)
 
-    # Wait for active shift banner
+    # Wait for banner to become visible
     WebDriverWait(driver, 10).until(
         lambda d: "hidden"
         not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
     )
 
-    # Verify shift started
+    # Wait for text to update
+    WebDriverWait(driver, 10).until(
+        EC.text_to_be_present_in_element((By.ID, "activeShiftBanner"), "10000")
+    )
+
     banner = driver.find_element(By.ID, "activeShiftBanner")
     assert "10000" in banner.text
 
@@ -1286,7 +1291,7 @@ def test_complete_workflow_with_maintenance(driver):
     time.sleep(1)
 
     # Check for maintenance-required class
-    maintenance_row = WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, 10).until(
         lambda d: "maintenance-required"
         in d.find_element(By.CSS_SELECTOR, "#maintenanceBody tr").get_attribute("class")
     )
