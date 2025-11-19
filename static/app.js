@@ -84,17 +84,13 @@ async function loadRequiredMaintenance() {
 
     updateMaintenanceBadge();
 
-    // Re-render if we're on the maintenance view
-    if (document.getElementById("maintenanceView").style.display !== "none") {
-      const searchTerm = document.getElementById(
-        "maintenanceSearchInput",
-      ).value;
-      UI.renderMaintenanceItems(
-        state.allMaintenanceItems,
-        searchTerm,
-        state.requiredMaintenanceIds,
-      );
-    }
+    // Always re-render maintenance items with updated required status
+    const searchTerm = document.getElementById("maintenanceSearchInput").value;
+    UI.renderMaintenanceItems(
+      state.allMaintenanceItems,
+      searchTerm,
+      state.requiredMaintenanceIds,
+    );
   } catch (error) {
     console.error("Error loading required maintenance:", error);
   }
