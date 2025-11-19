@@ -61,7 +61,11 @@ def wait_for_page_load(driver, timeout=10):
 def teardown_database():
     """Clear all data from the database via API."""
     try:
-        response = requests.post(f"{API_URL}/test/teardown", timeout=5)
+        # Use localhost in GitHub Actions instead of host.docker.internal
+        api_host = "localhost" if os.getenv("GITHUB_ACTIONS") == "true" else APP_HOST
+        api_url = f"http://{api_host}:3000/api"
+
+        response = requests.post(f"{api_url}/test/teardown", timeout=5)
         response.raise_for_status()
         print(f"✓ Database teardown: {response.json()}")
     except Exception as e:
