@@ -37,6 +37,7 @@ use crate::{
             delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
             get_shifts_by_range, start_shift, update_shift,
         },
+        test::teardown_all_data,
     },
     state::AppState,
 };
@@ -159,6 +160,8 @@ async fn main() {
             "/api/maintenance/calculate",
             get(calculate_required_maintenance),
         )
+        // Testing
+        .route("/api/test/teardown", post(teardown_all_data))
         .with_state(state)
         .layer(cors)
         // Serve static files from ./static directory as fallback
