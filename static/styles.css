@@ -816,6 +816,16 @@ td[contenteditable="true"]:focus {
     background: var(--danger-light) !important;
 }
 
+/* Override calculated styling for cells in overdue maintenance rows */
+.maintenance-required td.calculated {
+    background: var(--maintenance-required-bg) !important;
+    color: var(--text-primary);
+}
+
+.maintenance-required:hover td.calculated {
+    background: var(--danger-light) !important;
+}
+
 .empty-state td {
     padding: var(--spacing-xl) !important;
     text-align: center;

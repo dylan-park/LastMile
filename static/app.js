@@ -159,6 +159,7 @@ async function handleEndShift() {
     UI.closeModal("endShiftModal");
     await checkActiveShift();
     await loadShifts();
+    await loadMaintenanceItems(); // Refresh to get updated remaining_mileage
     await loadRequiredMaintenance();
     UI.showToast("Shift ended successfully", "success");
   } catch (error) {
@@ -191,6 +192,7 @@ async function handleShiftCellEdit(e) {
 
     // Update maintenance if odometer changed
     if (["odometer_start", "odometer_end"].includes(field)) {
+      await loadMaintenanceItems(); // Refresh to get updated remaining_mileage
       await loadRequiredMaintenance();
     }
   } catch (error) {
