@@ -217,6 +217,7 @@ async fn test_query_maintenance_items_with_data() {
         name: "Oil Change".to_string(),
         mileage_interval: 3000,
         last_service_mileage: 10000,
+        remaining_mileage: 0,
         enabled: true,
         notes: None,
     };
@@ -240,6 +241,7 @@ async fn test_get_maintenance_item_by_id_found() {
         name: "Tire Rotation".to_string(),
         mileage_interval: 5000,
         last_service_mileage: 15000,
+        remaining_mileage: 0,
         enabled: true,
         notes: Some("Every 5k miles".to_string()),
     };
@@ -263,4 +265,87 @@ async fn test_get_maintenance_item_by_id_not_found() {
         result.unwrap_err(),
         lastmile::error::AppError::MaintenanceItemNotFound
     ));
+}
+
+#[tokio::test]
+async fn test_update_all_maintenance_remaining_mileage_no_items() {
+    let db = common::setup_test_db().await;
+
+    // Should not error with no maintenance items
+    let result = update_all_maintenance_remaining_mileage(&db, 5000).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_update_all_maintenance_remaining_mileage_multiple_items() {
+    let db = common::setup_test_db().await;
+
+    // Create multiple maintenance items
+    let record1 = MaintenanceItemRecord {
+        name: "Oil Change".to_string(),
+        mileage_interval: 3000,
+        last_service_mileage: 10000,
+        remaining_mileage: 0,
+        enabled: true,
+        notes: None,
+    };
+    let record2 = MaintenanceItemRecord {
+        name: "Tire Rotation".to_string(),
+        mileage_interval: 5000,
+        last_service_mileage: 8000,
+        remaining_mileage: 0,
+        enabled: true,
+        notes: None,
+    };
+
+    let _: Option<MaintenanceItem> = db.create("maintenance").content(record1).await.unwrap();
+    let _: Option<MaintenanceItem> = db.create("maintenance").content(record2).await.unwrap();
+
+    // Update all with latest mileage of 11000
+    let result = update_all_maintenance_remaining_mileage(&db, 11000).await;
+    assert!(result.is_ok());
+
+    // Verify items were updated
+    let items = query_maitenance_items(&db, "SELECT * FROM maintenance ORDER BY name")
+        .await
+        .unwrap();
+    assert_eq!(items.len(), 2);
+
+    // Oil Change: interval 3000, last service 10000, current 11000
+    // Remaining: 3000 - (11000 - 10000) = 2000
+    assert_eq!(items[0].name, "Oil Change");
+    assert_eq!(items[0].remaining_mileage, 2000);
+
+    // Tire Rotation: interval 5000, last service 8000, current 11000
+    // Remaining: 5000 - (11000 - 8000) = 2000
+    assert_eq!(items[1].name, "Tire Rotation");
+    assert_eq!(items[1].remaining_mileage, 2000);
+}
+
+#[tokio::test]
+async fn test_update_all_maintenance_remaining_mileage_overdue_clamps_to_zero() {
+    let db = common::setup_test_db().await;
+
+    let record = MaintenanceItemRecord {
+        name: "Oil Change".to_string(),
+        mileage_interval: 3000,
+        last_service_mileage: 5000,
+        remaining_mileage: 0,
+        enabled: true,
+        notes: None,
+    };
+
+    let _: Option<MaintenanceItem> = db.create("maintenance").content(record).await.unwrap();
+
+    // Update with mileage that makes it overdue
+    // interval 3000, last service 5000, current 10000
+    // Remaining: 3000 - (10000 - 5000) = -2000, clamped to 0
+    let result = update_all_maintenance_remaining_mileage(&db, 10000).await;
+    assert!(result.is_ok());
+
+    let items = query_maitenance_items(&db, "SELECT * FROM maintenance")
+        .await
+        .unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].remaining_mileage, 0);
 }

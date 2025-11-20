@@ -11,7 +11,10 @@ use tracing::{info, warn};
 
 use crate::{
     calculations,
-    db::helpers::{get_shift_by_id, has_active_shift, query_shifts, query_shifts_with_date_range},
+    db::helpers::{
+        get_shift_by_id, has_active_shift, query_shifts, query_shifts_with_date_range,
+        update_all_maintenance_remaining_mileage,
+    },
     error::{AppError, Result},
     models::{
         DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
@@ -180,6 +183,9 @@ pub async fn end_shift(
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
+    // Update all maintenance items with new remaining mileage
+    update_all_maintenance_remaining_mileage(&state.db, payload.odometer_end).await?;
+
     info!(
         "Shift ended successfully: id={}, hours={}, miles={}",
         id, hours_worked, miles_driven
@@ -254,6 +260,13 @@ pub async fn update_shift(
         .await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
+
+    // Update all maintenance items with new remaining mileage if odometer_end changed
+    if let Some(new_odometer_end) = odometer_end {
+        if shift.odometer_end != Some(new_odometer_end) {
+            update_all_maintenance_remaining_mileage(&state.db, new_odometer_end).await?;
+        }
+    }
 
     info!("Shift updated successfully: id={}", id);
     Ok(Json(updated_shift))

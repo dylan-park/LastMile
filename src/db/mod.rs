@@ -29,6 +29,7 @@ pub async fn setup_database(db: &Surreal<Db>) {
         DEFINE FIELD name ON maintenance TYPE string;
         DEFINE FIELD mileage_interval ON maintenance TYPE int ASSERT $value >= 0;
         DEFINE FIELD last_service_mileage ON maintenance TYPE int ASSERT $value >= 0;
+        DEFINE FIELD remaining_mileage ON maintenance TYPE int ASSERT $value >= 0;
         DEFINE FIELD enabled ON maintenance TYPE bool DEFAULT true;
         DEFINE FIELD notes ON maintenance TYPE option<string>;
 

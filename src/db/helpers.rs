@@ -1,8 +1,10 @@
 use surrealdb::{Surreal, engine::local::Db};
+use tracing::info;
 
 use crate::{
+    calculations::calculate_remaining_mileage,
     error::{AppError, Result},
-    models::{MaintenanceItem, Shift},
+    models::{MaintenanceItem, MaintenanceItemUpdate, Shift},
 };
 
 // Helper to execute a query and extract shifts
@@ -47,4 +49,36 @@ pub async fn get_shift_by_id(db: &Surreal<Db>, id: &str) -> Result<Shift> {
 pub async fn get_maitenance_item_by_id(db: &Surreal<Db>, id: &str) -> Result<MaintenanceItem> {
     let maintenance_item: Option<MaintenanceItem> = db.select(("maintenance", id)).await?;
     maintenance_item.ok_or(AppError::MaintenanceItemNotFound)
+}
+
+// Helper function to update all maintenance items' remaining mileage
+// Called when shift odometer readings change
+pub async fn update_all_maintenance_remaining_mileage(
+    db: &Surreal<Db>,
+    latest_mileage: i32,
+) -> Result<()> {
+    info!("Updating remaining mileage for all maintenance items");
+
+    let maintenance_items = query_maitenance_items(db, "SELECT * FROM maintenance").await?;
+
+    for item in maintenance_items {
+        let remaining_mileage = calculate_remaining_mileage(
+            latest_mileage,
+            item.last_service_mileage,
+            item.mileage_interval,
+        );
+
+        let update = MaintenanceItemUpdate {
+            remaining_mileage: Some(remaining_mileage),
+            ..Default::default()
+        };
+
+        let _: Option<MaintenanceItem> = db
+            .update(("maintenance", item.id.id.to_string().as_str()))
+            .merge(update)
+            .await?;
+    }
+
+    info!("Updated remaining mileage for all maintenance items");
+    Ok(())
 }

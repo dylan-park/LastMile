@@ -3,6 +3,7 @@ use axum::extract::State;
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 
+use lastmile::db::helpers::get_maitenance_item_by_id;
 use lastmile::handlers::maintenance::*;
 use lastmile::handlers::shifts::*;
 use lastmile::models::*;
@@ -277,6 +278,8 @@ async fn test_create_maintenance_item() {
     assert_eq!(item.last_service_mileage, 10000);
     assert_eq!(item.enabled, true);
     assert_eq!(item.notes, Some("Full synthetic".to_string()));
+    // With no shifts, remaining_mileage should be interval (3000 - (0 - 10000) = 3000, clamped)
+    assert_eq!(item.remaining_mileage, 3000);
 }
 
 #[tokio::test]
@@ -469,4 +472,248 @@ async fn test_calculate_required_maintenance_disabled_item() {
 
     let result = calculate_required_maintenance(State(state)).await.unwrap();
     assert_eq!(result.0.required_maintenance_items.len(), 0);
+}
+
+#[tokio::test]
+async fn test_create_maintenance_item_with_existing_shift() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create a shift with odometer reading
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 12000,
+        earnings: Some(dec!(100.0)),
+        tips: None,
+        gas_cost: None,
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id),
+        Json(end_request),
+    )
+    .await;
+
+    // Create maintenance item
+    // Last service at 8000, interval 3000, current mileage 12000
+    // Remaining: 3000 - (12000 - 8000) = -1000, clamped to 0
+    let request = CreateMaintenanceItemRequest {
+        name: "Oil Change".to_string(),
+        mileage_interval: 3000,
+        last_service_mileage: Some(8000),
+        enabled: true,
+        notes: None,
+    };
+
+    let result = create_maintenance_item(State(state), Json(request)).await;
+    assert!(result.is_ok());
+
+    let item = result.unwrap().0;
+    assert_eq!(item.remaining_mileage, 0); // Overdue, clamped to 0
+}
+
+#[tokio::test]
+async fn test_update_maintenance_item_recalculates_remaining_mileage() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 11000,
+        earnings: Some(dec!(100.0)),
+        tips: None,
+        gas_cost: None,
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id),
+        Json(end_request),
+    )
+    .await;
+
+    // Create maintenance item
+    let create_request = CreateMaintenanceItemRequest {
+        name: "Oil Change".to_string(),
+        mileage_interval: 5000,
+        last_service_mileage: Some(8000),
+        enabled: true,
+        notes: None,
+    };
+    let item = create_maintenance_item(State(state.clone()), Json(create_request))
+        .await
+        .unwrap()
+        .0;
+    let item_id = item.id.id.to_string();
+
+    // Initial: interval 5000, last service 8000, current 11000
+    // Remaining: 5000 - (11000 - 8000) = 2000
+    assert_eq!(item.remaining_mileage, 2000);
+
+    // Update last_service_mileage to 10000
+    // New remaining: 5000 - (11000 - 10000) = 4000
+    let update_request = UpdateMaintenanceItemRequest {
+        name: None,
+        mileage_interval: None,
+        last_service_mileage: Some(10000),
+        enabled: None,
+        notes: None,
+    };
+
+    let result = update_maintenance_item(
+        State(state),
+        axum::extract::Path(item_id),
+        Json(update_request),
+    )
+    .await;
+    assert!(result.is_ok());
+
+    let updated = result.unwrap().0;
+    assert_eq!(updated.remaining_mileage, 4000);
+}
+
+#[tokio::test]
+async fn test_end_shift_updates_maintenance_remaining_mileage() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create maintenance item first
+    let create_request = CreateMaintenanceItemRequest {
+        name: "Oil Change".to_string(),
+        mileage_interval: 3000,
+        last_service_mileage: Some(10000),
+        enabled: true,
+        notes: None,
+    };
+    let item = create_maintenance_item(State(state.clone()), Json(create_request))
+        .await
+        .unwrap()
+        .0;
+    let item_id = item.id.id.to_string();
+
+    // Initial remaining_mileage with no shifts (defaults to 0 latest mileage)
+    // Remaining: 3000 - (0 - 10000) = 3000 (clamped)
+    assert_eq!(item.remaining_mileage, 3000);
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 11000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 12500,
+        earnings: Some(dec!(100.0)),
+        tips: None,
+        gas_cost: None,
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id),
+        Json(end_request),
+    )
+    .await;
+
+    // Fetch the maintenance item again
+    // New remaining: 3000 - (12500 - 10000) = 500
+    let updated_item = get_maitenance_item_by_id(&state.db, &item_id)
+        .await
+        .unwrap();
+    assert_eq!(updated_item.remaining_mileage, 500);
+}
+
+#[tokio::test]
+async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create maintenance item
+    let create_request = CreateMaintenanceItemRequest {
+        name: "Tire Rotation".to_string(),
+        mileage_interval: 5000,
+        last_service_mileage: Some(5000),
+        enabled: true,
+        notes: None,
+    };
+    let item = create_maintenance_item(State(state.clone()), Json(create_request))
+        .await
+        .unwrap()
+        .0;
+    let item_id = item.id.id.to_string();
+
+    // Create a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 8000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 9000,
+        earnings: Some(dec!(100.0)),
+        tips: None,
+        gas_cost: None,
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await;
+
+    // Check initial remaining: 5000 - (9000 - 5000) = 1000
+    let item_after_shift = get_maitenance_item_by_id(&state.db, &item_id)
+        .await
+        .unwrap();
+    assert_eq!(item_after_shift.remaining_mileage, 1000);
+
+    // Update shift odometer_end to 9500
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: Some(9500),
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+    };
+
+    let _ = update_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id),
+        Json(update_request),
+    )
+    .await;
+
+    // Check updated remaining: 5000 - (9500 - 5000) = 500
+    let item_after_update = get_maitenance_item_by_id(&state.db, &item_id)
+        .await
+        .unwrap();
+    assert_eq!(item_after_update.remaining_mileage, 500);
 }

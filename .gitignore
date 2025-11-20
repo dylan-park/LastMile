@@ -1,6 +1,6 @@
 target/
 .vscode/
-data
+data/
 *.surql
 venv/
 *.pytest_cache/

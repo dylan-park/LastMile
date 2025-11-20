@@ -146,7 +146,7 @@ const UI = {
 
     if (filtered.length === 0) {
       tbody.innerHTML = this._getEmptyState(
-        6,
+        7,
         searchTerm ? "No maintenance items found" : "No maintenance items yet",
         searchTerm
           ? "Try a different search term"
@@ -168,6 +168,7 @@ const UI = {
                 <td contenteditable="true" data-field="name" data-id="${item.id}">${item.name}</td>
                 <td contenteditable="true" data-field="mileage_interval" data-id="${item.id}">${item.mileage_interval}</td>
                 <td contenteditable="true" data-field="last_service_mileage" data-id="${item.id}">${item.last_service_mileage}</td>
+                <td class="calculated">${item.remaining_mileage}</td>
                 <td class="enabled-cell ${enabledClass}" role="button" tabindex="0" data-field="enabled" data-id="${item.id}">${enabledText}</td>
                 <td class="notes-cell" contenteditable="true" data-field="notes" data-id="${item.id}" title="${item.notes || ""}">${item.notes || ""}</td>
                 <td class="action-cell">
