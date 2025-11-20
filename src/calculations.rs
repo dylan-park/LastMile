@@ -37,6 +37,12 @@ pub fn calculate_remaining_mileage(
     last_service_mileage: i32,
     mileage_interval: i32,
 ) -> i32 {
+    // If latest mileage is less than last service mileage, return full interval
+    // This handles cases where no shifts exist yet or odometer was reset
+    if latest_mileage < last_service_mileage {
+        return mileage_interval;
+    }
+    
     let remaining = mileage_interval - (latest_mileage - last_service_mileage);
     remaining.max(0) // Clamp to 0, never go negative
 }
@@ -231,6 +237,16 @@ mod tests {
         // Latest: 0, Last service: 0, Interval: 1000
         // Remaining: 1000 - (0 - 0) = 1000
         assert_eq!(calculate_remaining_mileage(0, 0, 1000), 1000);
+    }
+
+    #[test]
+    fn test_calculate_remaining_mileage_latest_less_than_last_service() {
+        // Latest: 0, Last service: 10000, Interval: 3000
+        // Should return full interval since latest < last_service
+        assert_eq!(calculate_remaining_mileage(0, 10000, 3000), 3000);
+        
+        // Latest: 5000, Last service: 10000, Interval: 5000
+        assert_eq!(calculate_remaining_mileage(5000, 10000, 5000), 5000);
     }
 
     #[test]
