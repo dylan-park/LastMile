@@ -217,6 +217,7 @@ async fn test_query_maintenance_items_with_data() {
         name: "Oil Change".to_string(),
         mileage_interval: 3000,
         last_service_mileage: 10000,
+        remaining_mileage: 0,
         enabled: true,
         notes: None,
     };
@@ -240,6 +241,7 @@ async fn test_get_maintenance_item_by_id_found() {
         name: "Tire Rotation".to_string(),
         mileage_interval: 5000,
         last_service_mileage: 15000,
+        remaining_mileage: 0,
         enabled: true,
         notes: Some("Every 5k miles".to_string()),
     };

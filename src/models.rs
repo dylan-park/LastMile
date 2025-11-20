@@ -161,6 +161,7 @@ pub struct MaintenanceItem {
     pub name: String,
     pub mileage_interval: i32,
     pub last_service_mileage: i32,
+    pub remaining_mileage: i32,
     pub enabled: bool,
     pub notes: Option<String>,
 }
@@ -170,6 +171,7 @@ pub struct MaintenanceItemRecord {
     pub name: String,
     pub mileage_interval: i32,
     pub last_service_mileage: i32,
+    pub remaining_mileage: i32,
     pub enabled: bool,
     pub notes: Option<String>,
 }
@@ -182,6 +184,8 @@ pub struct MaintenanceItemUpdate {
     pub mileage_interval: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_service_mileage: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remaining_mileage: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     // Don't skip serializing notes - we want to allow explicitly setting it to None

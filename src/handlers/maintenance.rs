@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::{
-    calculations::calculate_is_maintenance_required,
+    calculations::{calculate_is_maintenance_required, calculate_remaining_mileage},
     db::helpers::{get_maitenance_item_by_id, query_maitenance_items, query_shifts},
     error::{AppError, Result},
     models::{
@@ -34,10 +34,28 @@ pub async fn create_maintenance_item(
 ) -> Result<Json<MaintenanceItem>> {
     info!("Creating new maintenance item: {}", payload.name);
 
+    // Get latest odometer reading to calculate remaining mileage
+    let latest_mileage: i32 = query_shifts(
+        &state.db,
+        "SELECT * FROM shifts WHERE odometer_end != NONE ORDER BY start_time DESC LIMIT 1;",
+    )
+    .await?
+    .first()
+    .and_then(|shift| shift.odometer_end)
+    .unwrap_or(0);
+
+    let last_service_mileage = payload.last_service_mileage.unwrap_or(0);
+    let remaining_mileage = calculate_remaining_mileage(
+        latest_mileage,
+        last_service_mileage,
+        payload.mileage_interval,
+    );
+
     let record = MaintenanceItemRecord {
         name: payload.name,
         mileage_interval: payload.mileage_interval,
-        last_service_mileage: payload.last_service_mileage.unwrap_or(0),
+        last_service_mileage,
+        remaining_mileage,
         enabled: payload.enabled,
         notes: payload.notes,
     };
@@ -84,11 +102,25 @@ pub async fn update_maintenance_item(
         None => maintenance_item.notes, // Field wasn't included, keep existing value
     };
 
+    // Get latest odometer reading to recalculate remaining mileage
+    let latest_mileage: i32 = query_shifts(
+        &state.db,
+        "SELECT * FROM shifts WHERE odometer_end != NONE ORDER BY start_time DESC LIMIT 1;",
+    )
+    .await?
+    .first()
+    .and_then(|shift| shift.odometer_end)
+    .unwrap_or(0);
+
+    let remaining_mileage =
+        calculate_remaining_mileage(latest_mileage, last_service_mileage, mileage_interval);
+
     // Create update struct with proper SurrealDB types
     let update = MaintenanceItemUpdate {
         name: Some(name),
         mileage_interval: Some(mileage_interval),
         last_service_mileage: Some(last_service_mileage),
+        remaining_mileage: Some(remaining_mileage),
         enabled: Some(enabled),
         notes,
     };
