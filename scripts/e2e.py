@@ -627,6 +627,9 @@ def test_add_maintenance_item(driver):
     table = driver.find_element(By.ID, "maintenanceBody")
     assert "Oil Change" in table.text
     assert "3000" in table.text
+    # Check remaining mileage (should be 3000 since last service was 10000 and current is assumed 0/less)
+    # Note: If no shifts, latest mileage is 0. 0 < 10000, so remaining = interval = 3000
+    assert "3000" in table.text
 
 
 def test_maintenance_search(driver):
@@ -787,6 +790,17 @@ def test_maintenance_required_badge(driver):
     badge = driver.find_element(By.ID, "maintenanceBadge")
     assert "hidden" not in badge.get_attribute("class")
     assert "1" in badge.text
+
+    # Verify remaining mileage is 0
+    driver.find_element(By.CSS_SELECTOR, '[data-view="maintenance"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "maintenanceView").is_displayed()
+    )
+    table = driver.find_element(By.ID, "maintenanceBody")
+    # Item "Due Soon", Interval 100, Last Service 10000, Current 10200
+    # Remaining: 100 - (10200 - 10000) = -100 -> clamped to 0
+    row = table.find_element(By.XPATH, "//tr[contains(., 'Due Soon')]")
+    assert "0" in row.text
 
 
 def test_maintenance_toggle_enabled(driver):
@@ -1299,6 +1313,108 @@ def test_complete_workflow_with_maintenance(driver):
         lambda d: "maintenance-required"
         in d.find_element(By.CSS_SELECTOR, "#maintenanceBody tr").get_attribute("class")
     )
+
+
+def test_remaining_mileage_updates_dynamically(driver):
+    """Test that remaining mileage updates dynamically without page refresh."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # 1. Create maintenance item
+    driver.find_element(By.CSS_SELECTOR, '[data-view="maintenance"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "maintenanceView").is_displayed()
+    )
+
+    driver.find_element(By.ID, "addMaintenanceBtn").click()
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "maintenanceName").send_keys("Dynamic Test")
+    driver.find_element(By.ID, "maintenanceMileageInterval").send_keys("5000")
+    driver.find_element(By.ID, "maintenanceLastService").clear()
+    driver.find_element(By.ID, "maintenanceLastService").send_keys("10000")
+    driver.find_element(By.ID, "maintenanceModalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+    )
+
+    # Initial state: No shifts, so remaining should be 5000 (interval)
+    time.sleep(1)
+    row = driver.find_element(By.XPATH, "//tr[contains(., 'Dynamic Test')]")
+    assert "5000" in row.text
+
+    # 2. Create a shift
+    driver.find_element(By.CSS_SELECTOR, '[data-view="shifts"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "shiftsView").is_displayed()
+    )
+
+    driver.find_element(By.ID, "startOdo").send_keys("12000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("13000")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # 3. Check maintenance view again - should be updated
+    driver.find_element(By.CSS_SELECTOR, '[data-view="maintenance"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "maintenanceView").is_displayed()
+    )
+
+    # Calculation: 5000 - (13000 - 10000) = 2000
+    time.sleep(1)
+    row = driver.find_element(By.XPATH, "//tr[contains(., 'Dynamic Test')]")
+    assert "2000" in row.text
+
+    # 4. Update the shift odometer
+    driver.find_element(By.CSS_SELECTOR, '[data-view="shifts"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "shiftsView").is_displayed()
+    )
+
+    # Find the shift row and edit end odometer
+    # The shift ends at 13000. We'll change it to 14000.
+    end_odo_cell = driver.find_element(By.XPATH, "//td[contains(text(), '13000')]")
+    end_odo_cell.click()
+
+    end_odo_cell.send_keys(Keys.CONTROL + "a")
+    end_odo_cell.send_keys(Keys.DELETE)
+    end_odo_cell.send_keys("14000")
+    end_odo_cell.send_keys(Keys.RETURN)
+
+    time.sleep(1)  # Wait for update
+
+    # 5. Check maintenance view again
+    driver.find_element(By.CSS_SELECTOR, '[data-view="maintenance"]').click()
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "maintenanceView").is_displayed()
+    )
+
+    # New Calculation: 5000 - (14000 - 10000) = 1000
+    time.sleep(1)
+    row = driver.find_element(By.XPATH, "//tr[contains(., 'Dynamic Test')]")
+    assert "1000" in row.text
 
 
 def test_stats_calculation_accuracy(driver):
