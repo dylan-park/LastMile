@@ -12,6 +12,7 @@ data/
 # Git
 .git/
 .gitignore
+.github/
 
 # IDE
 .vscode/
