@@ -80,48 +80,33 @@ function localToUTC(localDate) {
   // Take a Date object whose components represent local user timezone time
   // and convert to UTC ISO string
 
-  const year = localDate.getFullYear();
-  const month = localDate.getMonth();
-  const day = localDate.getDate();
-  const hours = localDate.getHours();
-  const minutes = localDate.getMinutes();
-  const seconds = localDate.getSeconds();
-  const ms = localDate.getMilliseconds();
-
-  // Format as a string that can be interpreted in user's local timezone
-  const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
-
-  // Parse this string as if it's in user's local timezone by using toLocaleString
-  // First, create a UTC date with these components
-  const utcDate = new Date(
-    Date.UTC(year, month, day, hours, minutes, seconds, ms),
-  );
-
-  // Get the formatted string in user's local timezone
-  const localString = utcDate.toLocaleString("en-US", {
-    timeZone: USER_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  // Calculate the offset by comparing the UTC interpretation vs local interpretation
-  const [datePart, timePart] = localString.split(", ");
-  const [mo, da, yr] = datePart.split("/");
-  const [hr, min, sec] = timePart.split(":");
-
-  const localInterpretation = new Date(Date.UTC(yr, mo - 1, da, hr, min, sec));
-  const offset = utcDate.getTime() - localInterpretation.getTime();
-
-  // Apply the offset to get the correct UTC time
-  const correctUTC = new Date(utcDate.getTime() - offset);
-
-  return correctUTC.toISOString();
+  // When a Date object is created from datetime-local input value,
+  // it already represents the correct moment in time (local time).
+  // We just need to convert it to UTC ISO string format.
+  // toISOString() automatically converts to UTC.
+  return localDate.toISOString();
 }
+
+/**
+ * Convert UTC ISO string to datetime-local format (YYYY-MM-DDTHH:mm:ss)
+ * Used to populate datetime-local input with user's local time
+ */
+function utcToDatetimeLocal(utcIsoString) {
+  if (!utcIsoString) return "";
+
+  const date = new Date(utcIsoString);
+
+  // Get local components
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
 
 // ===== NUMBER FORMATTING =====
 function formatMoney(value) {

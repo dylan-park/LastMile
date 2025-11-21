@@ -1,779 +1,501 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>LastMile</title>
-        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-        <link rel="stylesheet" href="styles.css" />
-        <!-- Apply dark mode immediately to prevent flash -->
-        <script>
-            localStorage.getItem("theme") === "dark" &&
-                document.documentElement.classList.add("dark-mode");
-        </script>
-    </head>
-    <body>
-        <!-- Toast Notification -->
-        <div id="toast" class="toast"></div>
 
-        <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="loading-overlay hidden">
-            <div class="spinner"></div>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LastMile</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Apply dark mode immediately to prevent flash -->
+    <script>
+        localStorage.getItem("theme") === "dark" &&
+            document.documentElement.classList.add("dark-mode");
+    </script>
+</head>
+
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>
+                    <svg aria-hidden="true" focusable="false" width="30" height="30" viewBox="0 0 60 60"
+                        fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path class="st0" d="M39.9,3.5L59.3,30L39.9,56.5H32l17-23.1H0.7v-6.8H49L32,3.5H39.9z" />
+                    </svg>
+                    LastMile
+                </h1>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <svg role="img" aria-label="Light mode icon" class="sun-icon" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg role="img" aria-label="Dark mode icon" class="moon-icon hidden" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- View Toggle -->
+        <div class="view-toggle-container">
+            <div class="view-toggle">
+                <button class="view-toggle-option active" data-view="shifts">
+                    Shifts
+                </button>
+                <button class="view-toggle-option" data-view="maintenance">
+                    Maintenance
+                    <span id="maintenanceBadge" class="maintenance-badge hidden">0</span>
+                </button>
+            </div>
         </div>
 
-        <div class="container">
-            <!-- Header -->
-            <header class="header">
-                <div class="header-content">
-                    <h1>
-                        <svg
-                            aria-hidden="true"
-                            focusable="false"
-                            width="30"
-                            height="30"
-                            viewBox="0 0 60 60"
-                            fill="currentColor"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path
-                                class="st0"
-                                d="M39.9,3.5L59.3,30L39.9,56.5H32l17-23.1H0.7v-6.8H49L32,3.5H39.9z"
-                            />
-                        </svg>
-                        LastMile
-                    </h1>
-                    <button
-                        class="theme-toggle"
-                        id="themeToggle"
-                        aria-label="Toggle theme"
-                    >
-                        <svg
-                            role="img"
-                            aria-label="Light mode icon"
-                            class="sun-icon"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line
-                                x1="4.22"
-                                y1="4.22"
-                                x2="5.64"
-                                y2="5.64"
-                            ></line>
-                            <line
-                                x1="18.36"
-                                y1="18.36"
-                                x2="19.78"
-                                y2="19.78"
-                            ></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line
-                                x1="4.22"
-                                y1="19.78"
-                                x2="5.64"
-                                y2="18.36"
-                            ></line>
-                            <line
-                                x1="18.36"
-                                y1="5.64"
-                                x2="19.78"
-                                y2="4.22"
-                            ></line>
-                        </svg>
-                        <svg
-                            role="img"
-                            aria-label="Dark mode icon"
-                            class="moon-icon hidden"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path
-                                d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-                            ></path>
-                        </svg>
+        <!-- Shifts View -->
+        <div id="shiftsView">
+            <!-- Stats Period Toggle -->
+            <div class="stats-toggle-container">
+                <div class="stats-toggle" id="statsToggle">
+                    <button class="toggle-option active" data-period="month">
+                        This Month
+                    </button>
+                    <button class="toggle-option" data-period="all">
+                        All Time
+                    </button>
+                    <button class="toggle-option" data-period="custom">
+                        Custom Range
                     </button>
                 </div>
-            </header>
-
-            <!-- View Toggle -->
-            <div class="view-toggle-container">
-                <div class="view-toggle">
-                    <button
-                        class="view-toggle-option active"
-                        data-view="shifts"
-                    >
-                        Shifts
-                    </button>
-                    <button class="view-toggle-option" data-view="maintenance">
-                        Maintenance
-                        <span
-                            id="maintenanceBadge"
-                            class="maintenance-badge hidden"
-                            >0</span
-                        >
-                    </button>
+                <div class="custom-date-range hidden" id="customDateRange">
+                    <div class="date-input-group">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate" autocomplete="off" />
+                    </div>
+                    <div class="date-input-group">
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate" autocomplete="off" />
+                    </div>
                 </div>
             </div>
 
-            <!-- Shifts View -->
-            <div id="shiftsView">
-                <!-- Stats Period Toggle -->
-                <div class="stats-toggle-container">
-                    <div class="stats-toggle" id="statsToggle">
-                        <button
-                            class="toggle-option active"
-                            data-period="month"
-                        >
-                            This Month
-                        </button>
-                        <button class="toggle-option" data-period="all">
-                            All Time
-                        </button>
-                        <button class="toggle-option" data-period="custom">
-                            Custom Range
-                        </button>
+            <!-- Stats Dashboard -->
+            <section class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-icon earnings-icon">
+                        <svg role="img" aria-label="Total earnings icon" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
                     </div>
-                    <div class="custom-date-range hidden" id="customDateRange">
-                        <div class="date-input-group">
-                            <label for="startDate">From</label>
-                            <input
-                                type="date"
-                                id="startDate"
-                                autocomplete="off"
-                            />
-                        </div>
-                        <div class="date-input-group">
-                            <label for="endDate">To</label>
-                            <input
-                                type="date"
-                                id="endDate"
-                                autocomplete="off"
-                            />
+                    <div class="stat-content">
+                        <div class="stat-label">Total Earnings</div>
+                        <div class="stat-value loading" id="statTotalEarnings">
+                            $0.00
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats Dashboard -->
-                <section class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <div class="stat-icon earnings-icon">
-                            <svg
-                                role="img"
-                                aria-label="Total earnings icon"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <line x1="12" y1="1" x2="12" y2="23"></line>
-                                <path
-                                    d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
-                                ></path>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Earnings</div>
-                            <div
-                                class="stat-value loading"
-                                id="statTotalEarnings"
-                            >
-                                $0.00
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon hours-icon">
-                            <svg
-                                role="img"
-                                aria-label="Total hours icon"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Hours</div>
-                            <div class="stat-value loading" id="statTotalHours">
-                                0.00
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon rate-icon">
-                            <svg
-                                role="img"
-                                aria-label="Average hourly rate icon"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"
-                                ></path>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Avg Hourly Rate</div>
-                            <div class="stat-value loading" id="statAvgRate">
-                                $0.00
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon miles-icon">
-                            <svg
-                                role="img"
-                                aria-label="Total miles icon"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path
-                                    d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
-                                ></path>
-                                <path d="M2 12h20"></path>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Total Miles</div>
-                            <div class="stat-value loading" id="statTotalMiles">
-                                0
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Active Shift Banner -->
-                <div id="activeShiftBanner" class="active-shift-banner hidden">
-                    <div class="banner-content">
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
+                <div class="stat-card">
+                    <div class="stat-icon hours-icon">
+                        <svg role="img" aria-label="Total hours icon" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        <div>
-                            <strong>Shift in Progress</strong>
-                            <div id="shiftInfo" class="shift-info-text"></div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Hours</div>
+                        <div class="stat-value loading" id="statTotalHours">
+                            0.00
                         </div>
                     </div>
-                    <button class="btn-danger" id="endShiftBtn">
-                        End Shift
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon rate-icon">
+                        <svg role="img" aria-label="Average hourly rate icon" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Avg Hourly Rate</div>
+                        <div class="stat-value loading" id="statAvgRate">
+                            $0.00
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon miles-icon">
+                        <svg role="img" aria-label="Total miles icon" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                            <path d="M2 12h20"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Miles</div>
+                        <div class="stat-value loading" id="statTotalMiles">
+                            0
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Active Shift Banner -->
+            <div id="activeShiftBanner" class="active-shift-banner hidden">
+                <div class="banner-content">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <div>
+                        <strong>Shift in Progress</strong>
+                        <div id="shiftInfo" class="shift-info-text"></div>
+                    </div>
+                </div>
+                <button class="btn-danger" id="endShiftBtn">
+                    End Shift
+                </button>
+            </div>
+
+            <!-- Shift Controls -->
+            <section class="controls-section">
+                <div id="startShiftSection" class="shift-controls">
+                    <input type="number" id="startOdo" placeholder="Starting Odometer" min="0" class="odo-input"
+                        autocomplete="off" />
+                    <button class="btn-primary" id="startShiftBtn">
+                        <svg role="img" aria-label="Start Shift icon" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Start Shift
                     </button>
                 </div>
 
-                <!-- Shift Controls -->
-                <section class="controls-section">
-                    <div id="startShiftSection" class="shift-controls">
-                        <input
-                            type="number"
-                            id="startOdo"
-                            placeholder="Starting Odometer"
-                            min="0"
-                            class="odo-input"
-                            autocomplete="off"
-                        />
-                        <button class="btn-primary" id="startShiftBtn">
-                            <svg
-                                role="img"
-                                aria-label="Start Shift icon"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
-                            Start Shift
-                        </button>
+                <div class="table-actions">
+                    <div class="search-box">
+                        <svg role="img" aria-label="Search Shifts icon" width="18" height="18" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input aria-label="Search Shifts" type="text" id="searchInput" placeholder="Search shifts..."
+                            autocomplete="off" />
                     </div>
-
-                    <div class="table-actions">
-                        <div class="search-box">
-                            <svg
-                                role="img"
-                                aria-label="Search Shifts icon"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <input
-                                aria-label="Search Shifts"
-                                type="text"
-                                id="searchInput"
-                                placeholder="Search shifts..."
-                                autocomplete="off"
-                            />
-                        </div>
-                        <button class="btn-export" id="exportBtn">
-                            <svg
-                                role="img"
-                                aria-label="Export CSV icon"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                                ></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Export CSV
-                        </button>
-                    </div>
-                </section>
-
-                <!-- Shifts Table -->
-                <div class="table-container">
-                    <div class="table-wrapper">
-                        <table id="shiftsTable">
-                            <thead>
-                                <tr>
-                                    <th
-                                        data-sort="start_time"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Start Time"
-                                    >
-                                        Start Time
-                                        <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        data-sort="end_time"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by End Time"
-                                    >
-                                        End Time <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        class="calculated"
-                                        data-sort="hours_worked"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Hours Worked"
-                                    >
-                                        Hours <span class="sort-icon"></span>
-                                    </th>
-                                    <th>Odo Start</th>
-                                    <th>Odo End</th>
-                                    <th class="calculated">Miles</th>
-                                    <th class="money">Earnings</th>
-                                    <th class="money">Tips</th>
-                                    <th class="money">Gas</th>
-                                    <th class="money calculated">Total</th>
-                                    <th class="money calculated">$/Hr</th>
-                                    <th>Notes</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="shiftsBody">
-                                <tr class="empty-state">
-                                    <td colspan="13">
-                                        <div class="empty-content">
-                                            <div class="spinner"></div>
-                                            <p>Loading shifts...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <button class="btn-export" id="exportBtn">
+                        <svg role="img" aria-label="Export CSV icon" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Export CSV
+                    </button>
                 </div>
-            </div>
+            </section>
 
-            <!-- Maintenance View -->
-            <div id="maintenanceView" style="display: none">
-                <section class="controls-section">
-                    <div class="maintenance-controls">
-                        <button class="btn-primary" id="addMaintenanceBtn">
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            Add Maintenance Item
-                        </button>
-                    </div>
-
-                    <div class="table-actions">
-                        <div class="search-box">
-                            <svg
-                                role="img"
-                                aria-label="Search Maintenance icon"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <input
-                                aria-label="Search Maintenance"
-                                type="text"
-                                id="maintenanceSearchInput"
-                                placeholder="Search maintenance items..."
-                                autocomplete="off"
-                            />
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Maintenance Table -->
-                <div class="table-container">
-                    <div class="table-wrapper">
-                        <table id="maintenanceTable">
-                            <thead>
-                                <tr>
-                                    <th
-                                        data-sort="name"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Name"
-                                    >
-                                        Name <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        data-sort="mileage_interval"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Mileage Interval"
-                                        class="sort-asc"
-                                    >
-                                        Mileage Interval
-                                        <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        data-sort="last_service_mileage"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Last Service"
-                                    >
-                                        Last Service
-                                        <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        class="calculated"
-                                        data-sort="remaining_mileage"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Remaining Mileage"
-                                    >
-                                        Remaining Miles
-                                        <span class="sort-icon"></span>
-                                    </th>
-                                    <th
-                                        data-sort="enabled"
-                                        role="button"
-                                        tabindex="0"
-                                        aria-label="Sort by Enabled"
-                                    >
-                                        Enabled <span class="sort-icon"></span>
-                                    </th>
-                                    <th>Notes</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="maintenanceBody">
-                                <tr class="empty-state">
-                                    <td colspan="7">
-                                        <div class="empty-content">
-                                            <div class="spinner"></div>
-                                            <p>Loading maintenance items...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- Shifts Table -->
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="shiftsTable">
+                        <thead>
+                            <tr>
+                                <th data-sort="start_time" role="button" tabindex="0" aria-label="Sort by Start Time">
+                                    Start Time
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th data-sort="end_time" role="button" tabindex="0" aria-label="Sort by End Time">
+                                    End Time <span class="sort-icon"></span>
+                                </th>
+                                <th class="calculated" data-sort="hours_worked" role="button" tabindex="0"
+                                    aria-label="Sort by Hours Worked">
+                                    Hours <span class="sort-icon"></span>
+                                </th>
+                                <th>Odo Start</th>
+                                <th>Odo End</th>
+                                <th class="calculated">Miles</th>
+                                <th class="money">Earnings</th>
+                                <th class="money">Tips</th>
+                                <th class="money">Gas</th>
+                                <th class="money calculated">Total</th>
+                                <th class="money calculated">$/Hr</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shiftsBody">
+                            <tr class="empty-state">
+                                <td colspan="13">
+                                    <div class="empty-content">
+                                        <div class="spinner"></div>
+                                        <p>Loading shifts...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- End Shift Modal -->
-        <div id="endShiftModal" class="modal">
-            <div class="modal-backdrop"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>End Shift</h2>
-                    <button
-                        class="modal-close"
-                        id="modalClose"
-                        aria-label="Close modal"
-                    >
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
+        <!-- Maintenance View -->
+        <div id="maintenanceView" style="display: none">
+            <section class="controls-section">
+                <div class="maintenance-controls">
+                    <button class="btn-primary" id="addMaintenanceBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
+                        Add Maintenance Item
                     </button>
                 </div>
 
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="endOdo"
-                            >Ending Odometer
-                            <span class="required">*</span></label
-                        >
-                        <input
-                            type="number"
-                            id="endOdo"
-                            min="0"
-                            required
-                            autocomplete="off"
-                        />
+                <div class="table-actions">
+                    <div class="search-box">
+                        <svg role="img" aria-label="Search Maintenance icon" width="18" height="18" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input aria-label="Search Maintenance" type="text" id="maintenanceSearchInput"
+                            placeholder="Search maintenance items..." autocomplete="off" />
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="earnings">Earnings</label>
-                            <div class="input-with-icon">
-                                <span class="input-icon">$</span>
-                                <input
-                                    type="number"
-                                    id="earnings"
-                                    step="0.01"
-                                    min="0"
-                                    value="0"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="tips">Tips</label>
-                            <div class="input-with-icon">
-                                <span class="input-icon">$</span>
-                                <input
-                                    type="number"
-                                    id="tips"
-                                    step="0.01"
-                                    min="0"
-                                    value="0"
-                                    autocomplete="off"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                </div>
+            </section>
+
+            <!-- Maintenance Table -->
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="maintenanceTable">
+                        <thead>
+                            <tr>
+                                <th data-sort="name" role="button" tabindex="0" aria-label="Sort by Name">
+                                    Name <span class="sort-icon"></span>
+                                </th>
+                                <th data-sort="mileage_interval" role="button" tabindex="0"
+                                    aria-label="Sort by Mileage Interval" class="sort-asc">
+                                    Mileage Interval
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th data-sort="last_service_mileage" role="button" tabindex="0"
+                                    aria-label="Sort by Last Service">
+                                    Last Service
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th class="calculated" data-sort="remaining_mileage" role="button" tabindex="0"
+                                    aria-label="Sort by Remaining Mileage">
+                                    Remaining Miles
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th data-sort="enabled" role="button" tabindex="0" aria-label="Sort by Enabled">
+                                    Enabled <span class="sort-icon"></span>
+                                </th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintenanceBody">
+                            <tr class="empty-state">
+                                <td colspan="7">
+                                    <div class="empty-content">
+                                        <div class="spinner"></div>
+                                        <p>Loading maintenance items...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Shift Modal -->
+    <div id="endShiftModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>End Shift</h2>
+                <button class="modal-close" id="modalClose" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="endOdo">Ending Odometer
+                        <span class="required">*</span></label>
+                    <input type="number" id="endOdo" min="0" required autocomplete="off" />
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="gasCost">Gas Cost</label>
+                        <label for="earnings">Earnings</label>
                         <div class="input-with-icon">
                             <span class="input-icon">$</span>
-                            <input
-                                type="number"
-                                id="gasCost"
-                                step="0.01"
-                                min="0"
-                                value="0"
-                                autocomplete="off"
-                            />
+                            <input type="number" id="earnings" step="0.01" min="0" value="0" autocomplete="off" />
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="notes">Notes</label>
-                        <textarea
-                            id="notes"
-                            placeholder="Optional notes about this shift..."
-                            rows="3"
-                            autocomplete="off"
-                        ></textarea>
+                        <label for="tips">Tips</label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">$</span>
+                            <input type="number" id="tips" step="0.01" min="0" value="0" autocomplete="off" />
+                        </div>
                     </div>
                 </div>
-
-                <div class="modal-footer">
-                    <button class="btn-secondary" id="modalCancel">
-                        Cancel
-                    </button>
-                    <button class="btn-primary" id="modalSubmit">
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Complete Shift
-                    </button>
+                <div class="form-group">
+                    <label for="gasCost">Gas Cost</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">$</span>
+                        <input type="number" id="gasCost" step="0.01" min="0" value="0" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" placeholder="Optional notes about this shift..." rows="3"
+                        autocomplete="off"></textarea>
                 </div>
             </div>
-        </div>
 
-        <!-- Add Maintenance Modal -->
-        <div id="maintenanceModal" class="modal">
-            <div class="maintenance-modal-backdrop modal-backdrop"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Add Maintenance Item</h2>
-                    <button
-                        class="modal-close"
-                        id="maintenanceModalClose"
-                        aria-label="Close modal"
-                    >
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="maintenanceName"
-                            >Name <span class="required">*</span></label
-                        >
-                        <input
-                            type="text"
-                            id="maintenanceName"
-                            placeholder="e.g., Oil Change"
-                            required
-                            autocomplete="off"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="maintenanceMileageInterval"
-                            >Mileage Interval
-                            <span class="required">*</span></label
-                        >
-                        <input
-                            type="number"
-                            id="maintenanceMileageInterval"
-                            placeholder="e.g., 3000"
-                            min="1"
-                            required
-                            autocomplete="off"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="maintenanceLastService"
-                            >Last Service Mileage</label
-                        >
-                        <input
-                            type="number"
-                            id="maintenanceLastService"
-                            value="0"
-                            min="0"
-                            autocomplete="off"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                id="maintenanceEnabled"
-                                checked
-                            />
-                            <span>Enabled</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label for="maintenanceNotes">Notes</label>
-                        <textarea
-                            id="maintenanceNotes"
-                            placeholder="Optional notes..."
-                            rows="3"
-                            autocomplete="off"
-                        ></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn-secondary" id="maintenanceModalCancel">
-                        Cancel
-                    </button>
-                    <button class="btn-primary" id="maintenanceModalSubmit">
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Add Item
-                    </button>
-                </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="modalCancel">
+                    Cancel
+                </button>
+                <button class="btn-primary" id="modalSubmit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Complete Shift
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- JavaScript Files -->
-        <script defer src="utils.js"></script>
-        <script defer src="api.js"></script>
-        <script defer src="ui.js"></script>
-        <script defer src="app.js"></script>
-    </body>
+    <!-- Add Maintenance Modal -->
+    <div id="maintenanceModal" class="modal">
+        <div class="maintenance-modal-backdrop modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Maintenance Item</h2>
+                <button class="modal-close" id="maintenanceModalClose" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="maintenanceName">Name <span class="required">*</span></label>
+                    <input type="text" id="maintenanceName" placeholder="e.g., Oil Change" required
+                        autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceMileageInterval">Mileage Interval
+                        <span class="required">*</span></label>
+                    <input type="number" id="maintenanceMileageInterval" placeholder="e.g., 3000" min="1" required
+                        autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceLastService">Last Service Mileage</label>
+                    <input type="number" id="maintenanceLastService" value="0" min="0" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="maintenanceEnabled" checked />
+                        <span>Enabled</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceNotes">Notes</label>
+                    <textarea id="maintenanceNotes" placeholder="Optional notes..." rows="3"
+                        autocomplete="off"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" id="maintenanceModalCancel">
+                    Cancel
+                </button>
+                <button class="btn-primary" id="maintenanceModalSubmit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Add Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Datetime Modal -->
+    <div id="editDatetimeModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="datetimeModalTitle">Edit Time</h2>
+                <button class="modal-close" id="datetimeModalClose" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="datetimeInput">Date & Time
+                        <span class="required">*</span></label>
+                    <input type="datetime-local" id="datetimeInput" step="1" required autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" id="datetimeModalCancel">
+                    Cancel
+                </button>
+                <button class="btn-primary" id="datetimeModalSubmit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script defer src="utils.js"></script>
+    <script defer src="api.js"></script>
+    <script defer src="ui.js"></script>
+    <script defer src="app.js"></script>
+</body>
+
 </html>

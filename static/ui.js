@@ -104,8 +104,8 @@ const UI = {
       .map(
         (shift) => `
             <tr data-shift-id="${shift.id}">
-                <td>${formatDateTime(shift.start_time)}</td>
-                <td>${formatDateTime(shift.end_time)}</td>
+                <td class="datetime-cell" data-field="start_time" data-id="${shift.id}">${formatDateTime(shift.start_time)}</td>
+                <td class="datetime-cell" data-field="end_time" data-id="${shift.id}">${formatDateTime(shift.end_time)}</td>
                 <td class="calculated">${formatHours(shift.hours_worked)}</td>
                 <td contenteditable="true" data-field="odometer_start" data-id="${shift.id}">${shift.odometer_start}</td>
                 <td contenteditable="true" data-field="odometer_end" data-id="${shift.id}">${shift.odometer_end || ""}</td>

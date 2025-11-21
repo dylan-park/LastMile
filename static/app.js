@@ -202,6 +202,102 @@ async function handleShiftCellEdit(e) {
   }
 }
 
+// ===== DATETIME EDITING =====
+let currentDatetimeEdit = { shiftId: null, field: null, currentShift: null };
+
+function handleDatetimeClick(e) {
+  const cell = e.target.closest(".datetime-cell");
+  if (!cell) return;
+
+  const shiftId = cell.dataset.id;
+  const field = cell.dataset.field;
+
+  // Find the shift data
+  const shift = state.allShifts.find((s) => s.id === shiftId);
+  if (!shift) return;
+
+  // Store current edit context
+  currentDatetimeEdit = { shiftId, field, currentShift: shift };
+
+  // Get the current value
+  const currentValue = shift[field];
+  if (!currentValue) {
+    UI.showToast("Cannot edit empty time", "error");
+    return;
+  }
+
+  // Set modal title
+  const title =
+    field === "start_time" ? "Edit Start Time" : "Edit End Time";
+  document.getElementById("datetimeModalTitle").textContent = title;
+
+  // Convert UTC to local datetime-local format and populate input
+  const localDatetime = utcToDatetimeLocal(currentValue);
+  document.getElementById("datetimeInput").value = localDatetime;
+
+  // Open modal
+  UI.openModal("editDatetimeModal");
+}
+
+async function handleDatetimeSubmit() {
+  const input = document.getElementById("datetimeInput");
+  const localDatetimeValue = input.value;
+
+  if (!localDatetimeValue) {
+    UI.showToast("Please select a date and time", "error");
+    return;
+  }
+
+  const { shiftId, field, currentShift } = currentDatetimeEdit;
+
+  // Convert datetime-local value to Date object
+  const localDate = new Date(localDatetimeValue);
+
+  // Convert local time to UTC ISO string
+  const utcIsoString = localToUTC(localDate);
+
+  // Validate: if editing end_time, it must be after start_time
+  if (field === "end_time") {
+    const startTime = new Date(currentShift.start_time);
+    const endTime = new Date(utcIsoString);
+
+    if (endTime <= startTime) {
+      UI.showToast("End time must be after start time", "error");
+      return;
+    }
+  }
+
+  // Validate: if editing start_time, it must be before end_time (if exists)
+  if (field === "start_time" && currentShift.end_time) {
+    const startTime = new Date(utcIsoString);
+    const endTime = new Date(currentShift.end_time);
+
+    if (startTime >= endTime) {
+      UI.showToast("Start time must be before end time", "error");
+      return;
+    }
+  }
+
+  try {
+    UI.showLoading();
+
+    const payload = {};
+    payload[field] = utcIsoString;
+
+    await API.updateShift(shiftId, payload);
+    await loadShifts();
+
+    UI.closeModal("editDatetimeModal");
+    UI.showToast("Time updated successfully", "success");
+  } catch (error) {
+    console.error("Error updating datetime:", error);
+    UI.showToast("Failed to update time", "error");
+  } finally {
+    UI.hideLoading();
+  }
+}
+
+
 async function handleDeleteShift(id) {
   if (!confirm("Are you sure you want to delete this shift?")) {
     return;
@@ -495,7 +591,23 @@ document.addEventListener("DOMContentLoaded", () => {
     .querySelector(".modal-backdrop")
     .addEventListener("click", () => UI.closeModal("endShiftModal"));
 
-  // Search
+  // Datetime modal controls
+  document
+    .getElementById("datetimeModalClose")
+    .addEventListener("click", () => UI.closeModal("editDatetimeModal"));
+  document
+    .getElementById("datetimeModalCancel")
+    .addEventListener("click", () => UI.closeModal("editDatetimeModal"));
+  document
+    .getElementById("datetimeModalSubmit")
+    .addEventListener("click", handleDatetimeSubmit);
+
+  // Datetime cell click handler (event delegation)
+  document
+    .getElementById("shiftsBody")
+    .addEventListener("click", handleDatetimeClick);
+
+  // Cell editing
   document.getElementById("searchInput").addEventListener("input", (e) => {
     debounce(() => UI.renderShifts(state.allShifts, e.target.value), 300)();
   });
