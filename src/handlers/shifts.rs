@@ -161,6 +161,7 @@ pub async fn end_shift(
 
     // Create update struct with proper SurrealDB types
     let update = ShiftUpdate {
+        start_time: None,
         end_time: Some(now.into()),
         odometer_start: None,
         odometer_end: Some(payload.odometer_end),
@@ -202,6 +203,43 @@ pub async fn update_shift(
 
     let shift = get_shift_by_id(&state.db, &id).await?;
 
+    // Parse datetime strings if provided
+    let new_start_time: Option<DateTime<Utc>> = if let Some(ref start_str) = payload.start_time {
+        Some(start_str.parse().map_err(|e| {
+            warn!("Invalid start_time format: {}", e);
+            AppError::Database(Box::new(surrealdb::Error::Api(
+                surrealdb::error::Api::Query("Invalid start_time format".to_string()),
+            )))
+        })?)
+    } else {
+        None
+    };
+
+    let new_end_time: Option<DateTime<Utc>> = if let Some(ref end_str) = payload.end_time {
+        Some(end_str.parse().map_err(|e| {
+            warn!("Invalid end_time format: {}", e);
+            AppError::Database(Box::new(surrealdb::Error::Api(
+                surrealdb::error::Api::Query("Invalid end_time format".to_string()),
+            )))
+        })?)
+    } else {
+        None
+    };
+
+    // Determine final start and end times
+    let final_start_time = new_start_time.unwrap_or(shift.start_time);
+    let final_end_time = new_end_time.or(shift.end_time);
+
+    // Validate: end_time must be after start_time if both exist
+    if let Some(end) = final_end_time {
+        if end <= final_start_time {
+            warn!("Invalid time range: end_time must be after start_time");
+            return Err(AppError::Database(Box::new(surrealdb::Error::Api(
+                surrealdb::error::Api::Query("End time must be after start time".to_string()),
+            ))));
+        }
+    }
+
     // Merge updates with existing values, normalizing user inputs
     let odometer_start = payload.odometer_start.unwrap_or(shift.odometer_start);
     let odometer_end = payload.odometer_end.or(shift.odometer_end);
@@ -227,9 +265,9 @@ pub async fn update_shift(
     // Recalculate derived fields (already normalized by calculation functions)
     let miles_driven = odometer_end.map(|end| calculations::calculate_miles(odometer_start, end));
 
-    let hours_worked = shift
-        .end_time
-        .map(|end_time| calculations::calculate_hours(shift.start_time, end_time));
+    // Recalculate hours_worked using final times
+    let hours_worked =
+        final_end_time.map(|end_time| calculations::calculate_hours(final_start_time, end_time));
 
     let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
 
@@ -239,7 +277,8 @@ pub async fn update_shift(
 
     // Create update struct with proper SurrealDB types
     let update = ShiftUpdate {
-        end_time: None, // Don't change end_time in update
+        start_time: new_start_time.map(|t| t.into()),
+        end_time: new_end_time.map(|t| t.into()),
         odometer_start: Some(odometer_start),
         odometer_end,
         miles_driven,

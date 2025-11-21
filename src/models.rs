@@ -100,6 +100,8 @@ pub struct ShiftRecord {
 #[derive(Debug, Serialize, Default)]
 pub struct ShiftUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_time: Option<surrealdb::sql::Datetime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_time: Option<surrealdb::sql::Datetime>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub odometer_start: Option<i32>,
@@ -139,6 +141,8 @@ pub struct EndShiftRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateShiftRequest {
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
     pub odometer_start: Option<i32>,
     pub odometer_end: Option<i32>,
     pub earnings: Option<Decimal>,
@@ -395,6 +399,20 @@ mod tests {
 
         let request: UpdateShiftRequest = serde_json::from_value(json_data).unwrap();
         assert_eq!(request.notes, Some(None));
+    }
+
+    #[test]
+    fn test_update_shift_request_with_datetime_fields() {
+        let json_data = json!({
+            "start_time": "2025-11-20T10:00:00Z",
+            "end_time": "2025-11-20T14:30:00Z"
+        });
+
+        let request: UpdateShiftRequest = serde_json::from_value(json_data).unwrap();
+        assert_eq!(request.start_time, Some("2025-11-20T10:00:00Z".to_string()));
+        assert_eq!(request.end_time, Some("2025-11-20T14:30:00Z".to_string()));
+        assert_eq!(request.odometer_start, None);
+        assert_eq!(request.odometer_end, None);
     }
 
     #[test]
