@@ -90,7 +90,7 @@ Environment variables (optional):
 - [x] Track maintenance tasks
   - [x] Create maintenance page and backend systems
   - [x] Calculate remaining milage per maintenance task
-- [ ] Allow editing of shift TimeDates
+- [x] Allow editing of shift TimeDates
 - [x] Allow deletion of shifts
   - [x] Create shift deletion endpoint
   - [x] Add shift deletion to UI

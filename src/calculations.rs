@@ -42,7 +42,7 @@ pub fn calculate_remaining_mileage(
     if latest_mileage < last_service_mileage {
         return mileage_interval;
     }
-    
+
     let remaining = mileage_interval - (latest_mileage - last_service_mileage);
     remaining.max(0) // Clamp to 0, never go negative
 }
@@ -244,7 +244,7 @@ mod tests {
         // Latest: 0, Last service: 10000, Interval: 3000
         // Should return full interval since latest < last_service
         assert_eq!(calculate_remaining_mileage(0, 10000, 3000), 3000);
-        
+
         // Latest: 5000, Last service: 10000, Interval: 5000
         assert_eq!(calculate_remaining_mileage(5000, 10000, 5000), 5000);
     }

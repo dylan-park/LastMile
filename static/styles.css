@@ -406,12 +406,10 @@ html.dark-mode .miles-icon {
 
 /* Loading state for stats */
 .stat-value.loading {
-    background: linear-gradient(
-        90deg,
-        var(--bg-tertiary) 25%,
-        var(--bg-hover) 50%,
-        var(--bg-tertiary) 75%
-    );
+    background: linear-gradient(90deg,
+            var(--bg-tertiary) 25%,
+            var(--bg-hover) 50%,
+            var(--bg-tertiary) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
@@ -423,6 +421,7 @@ html.dark-mode .miles-icon {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -432,9 +431,11 @@ html.dark-mode .miles-icon {
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.05);
     }
+
     100% {
         transform: scale(1);
     }
@@ -446,11 +447,9 @@ html.dark-mode .miles-icon {
 
 /* ===== ACTIVE SHIFT BANNER ===== */
 .active-shift-banner {
-    background: linear-gradient(
-        135deg,
-        var(--accent) 0%,
-        var(--accent-dark) 100%
-    );
+    background: linear-gradient(135deg,
+            var(--accent) 0%,
+            var(--accent-dark) 100%);
     color: white;
     padding: var(--spacing-lg);
     border-radius: 12px;
@@ -468,6 +467,7 @@ html.dark-mode .miles-icon {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -523,7 +523,7 @@ html.dark-mode .miles-icon {
     border-top: 1px solid var(--border-color);
 }
 
-.maintenance-controls + .table-actions {
+.maintenance-controls+.table-actions {
     margin-top: 0;
     padding-top: var(--spacing-md);
 }
@@ -776,6 +776,17 @@ td[contenteditable="true"]:focus {
     opacity: 0.6;
 }
 
+.datetime-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.datetime-cell:hover {
+    background: var(--accent-light);
+    outline: 1px solid var(--accent);
+}
+
+
 .notes-cell {
     max-width: 250px;
     white-space: nowrap;
@@ -873,6 +884,7 @@ td[contenteditable="true"]:focus {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -906,6 +918,7 @@ td[contenteditable="true"]:focus {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

@@ -180,6 +180,8 @@ async fn test_update_shift() {
         tips: Some(dec!(30.0)),
         gas_cost: Some(dec!(20.0)),
         notes: Some(Some("Updated".to_string())),
+        start_time: None,
+        end_time: None,
     };
 
     let result = update_shift(
@@ -702,6 +704,8 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
         tips: None,
         gas_cost: None,
         notes: None,
+        start_time: None,
+        end_time: None,
     };
 
     let _ = update_shift(
@@ -716,4 +720,417 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
         .await
         .unwrap();
     assert_eq!(item_after_update.remaining_mileage, 500);
+}
+
+#[tokio::test]
+async fn test_update_shift_start_time() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+    let original_start = shift.start_time;
+
+    // End the shift
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(50.0)),
+        tips: Some(dec!(10.0)),
+        gas_cost: Some(dec!(5.0)),
+        notes: None,
+    };
+    let ended_shift = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap()
+    .0;
+
+    let original_hours = ended_shift.hours_worked.unwrap();
+
+    // Update start_time to 1 hour earlier
+    let new_start_time = original_start - chrono::Duration::hours(1);
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: Some(new_start_time.to_rfc3339()),
+        end_time: None,
+    };
+
+    let result = update_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(update_request),
+    )
+    .await;
+
+    assert!(result.is_ok());
+    let updated_shift = result.unwrap().0;
+
+    // Verify start_time changed
+    assert_eq!(updated_shift.start_time, new_start_time);
+
+    // Verify hours_worked increased (should be ~1 hour more than original)
+    assert!(updated_shift.hours_worked.unwrap() > original_hours);
+}
+
+#[tokio::test]
+async fn test_update_shift_end_time() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(60.0)),
+        tips: Some(dec!(10.0)),
+        gas_cost: Some(dec!(5.0)),
+        notes: None,
+    };
+    let ended_shift = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap()
+    .0;
+
+    let original_end = ended_shift.end_time.unwrap();
+    let original_hours = ended_shift.hours_worked.unwrap();
+
+    // Update end_time to 2 hours later
+    let new_end_time = original_end + chrono::Duration::hours(2);
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: None,
+        end_time: Some(new_end_time.to_rfc3339()),
+    };
+
+    let result = update_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(update_request),
+    )
+    .await;
+
+    assert!(result.is_ok());
+    let updated_shift = result.unwrap().0;
+
+    // Verify end_time changed
+    assert_eq!(updated_shift.end_time.unwrap(), new_end_time);
+
+    // Verify hours_worked increased by ~2 hours
+    assert!(updated_shift.hours_worked.unwrap() > original_hours + dec!(1.9));
+
+    // Verify hourly_pay recalculated
+    let expected_hourly = dec!(65.0) / updated_shift.hours_worked.unwrap();
+    assert_eq!(updated_shift.hourly_pay.unwrap(), expected_hourly);
+}
+
+#[tokio::test]
+async fn test_update_shift_both_times() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+    let original_start = shift.start_time;
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(100.0)),
+        tips: Some(dec!(20.0)),
+        gas_cost: Some(dec!(10.0)),
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap();
+
+    // Update both times to create a 3-hour shift
+    let new_start_time = original_start;
+    let new_end_time = original_start + chrono::Duration::hours(3);
+
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: Some(new_start_time.to_rfc3339()),
+        end_time: Some(new_end_time.to_rfc3339()),
+    };
+
+    let result = update_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(update_request),
+    )
+    .await;
+
+    assert!(result.is_ok());
+    let updated_shift = result.unwrap().0;
+
+    // Verify times changed
+    assert_eq!(updated_shift.start_time, new_start_time);
+    assert_eq!(updated_shift.end_time.unwrap(), new_end_time);
+
+    // Verify hours_worked is exactly 3
+    assert_eq!(updated_shift.hours_worked.unwrap(), dec!(3.0));
+
+    // Verify hourly_pay recalculated: (100 + 20 - 10) / 3 = 36.666...
+    let expected_hourly = lastmile::calculations::normalize_decimal(dec!(110.0) / dec!(3.0));
+    assert_eq!(updated_shift.hourly_pay.unwrap(), expected_hourly);
+}
+
+#[tokio::test]
+async fn test_update_shift_invalid_end_before_start() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(50.0)),
+        tips: Some(dec!(10.0)),
+        gas_cost: Some(dec!(5.0)),
+        notes: None,
+    };
+    let ended_shift = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap()
+    .0;
+
+    // Try to set end_time before start_time
+    let invalid_end_time = ended_shift.start_time - chrono::Duration::hours(1);
+
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: None,
+        end_time: Some(invalid_end_time.to_rfc3339()),
+    };
+
+    let result = update_shift(
+        State(state),
+        axum::extract::Path(shift_id),
+        Json(update_request),
+    )
+    .await;
+
+    // Should return error
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_update_shift_invalid_start_after_end() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(50.0)),
+        tips: Some(dec!(10.0)),
+        gas_cost: Some(dec!(5.0)),
+        notes: None,
+    };
+    let ended_shift = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap()
+    .0;
+
+    // Try to set start_time after end_time
+    let invalid_start_time = ended_shift.end_time.unwrap() + chrono::Duration::hours(1);
+
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: Some(invalid_start_time.to_rfc3339()),
+        end_time: None,
+    };
+
+    let result = update_shift(
+        State(state),
+        axum::extract::Path(shift_id),
+        Json(update_request),
+    )
+    .await;
+
+    // Should return error
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_update_shift_invalid_datetime_format() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+
+    // Try to update with invalid datetime format
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: Some("not-a-valid-datetime".to_string()),
+        end_time: None,
+    };
+
+    let result = update_shift(
+        State(state),
+        axum::extract::Path(shift_id),
+        Json(update_request),
+    )
+    .await;
+
+    // Should return error
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_update_shift_time_recalculates_hourly_pay() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Start and end a shift
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift_id = shift.id.id.to_string();
+    let start_time = shift.start_time;
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(120.0)),
+        tips: Some(dec!(30.0)),
+        gas_cost: Some(dec!(10.0)),
+        notes: None,
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift_id.clone()),
+        Json(end_request),
+    )
+    .await
+    .unwrap();
+
+    // Update to create exactly 4 hour shift
+    let new_end_time = start_time + chrono::Duration::hours(4);
+
+    let update_request = UpdateShiftRequest {
+        odometer_start: None,
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        start_time: None,
+        end_time: Some(new_end_time.to_rfc3339()),
+    };
+
+    let result = update_shift(
+        State(state),
+        axum::extract::Path(shift_id),
+        Json(update_request),
+    )
+    .await;
+
+    assert!(result.is_ok());
+    let updated_shift = result.unwrap().0;
+
+    // Verify hours_worked is 4
+    assert_eq!(updated_shift.hours_worked.unwrap(), dec!(4.0));
+
+    // Verify hourly_pay: (120 + 30 - 10) / 4 = 35.00
+    assert_eq!(updated_shift.hourly_pay.unwrap(), dec!(35.0));
 }
