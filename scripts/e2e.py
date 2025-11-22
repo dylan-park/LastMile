@@ -264,7 +264,7 @@ def test_start_shift_validation_empty(driver):
         time.sleep(0.2)
         toast = driver.find_element(By.ID, "toast")
 
-    assert toast.text, "Toast has no text content"
+    assert toast.text, "Please enter starting odometer reading"
     assert "odometer" in toast.text.lower(), (
         f"Expected 'odometer' in toast but got: {toast.text}"
     )
@@ -1464,6 +1464,502 @@ def test_stats_calculation_accuracy(driver):
 
     assert "105" in total_earnings
     assert "50" in total_miles
+
+
+# ============================================================================
+# DATETIME EDITING TESTS
+# ============================================================================
+
+
+def test_edit_shift_start_time_happy_path(driver):
+    """Test successfully editing a shift's start time."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Start and end a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("100")
+    driver.find_element(By.ID, "tips").clear()
+    driver.find_element(By.ID, "tips").send_keys("20")
+    driver.find_element(By.ID, "gasCost").clear()
+    driver.find_element(By.ID, "gasCost").send_keys("10")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)  # Wait for table to update
+
+    # Find and click the start_time cell
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    original_start_time = start_time_cell.text
+    start_time_cell.click()
+
+    # Wait for datetime modal to open
+    datetime_modal = WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "editDatetimeModal")
+    )
+    assert "show" in datetime_modal.get_attribute("class")
+
+    # Verify modal title
+    modal_title = driver.find_element(By.ID, "datetimeModalTitle").text
+    assert "Start Time" in modal_title
+
+    # Get the current value and modify it (subtract 1 hour)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    # Parse and modify the datetime (subtract 1 hour)
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    new_dt = dt - timedelta(hours=1)
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value to ensure proper format
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+
+    # Submit the change
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    time.sleep(2)  # Wait for table to update
+
+    # Verify the start time changed
+    updated_start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    updated_start_time = updated_start_time_cell.text
+    assert updated_start_time != original_start_time
+
+
+def test_edit_shift_end_time_happy_path(driver):
+    """Test successfully editing a shift's end time."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Start and end a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("80")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Click the end_time cell
+    end_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="end_time"]'
+    )
+    original_end_time = end_time_cell.text
+    end_time_cell.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Verify modal title
+    modal_title = driver.find_element(By.ID, "datetimeModalTitle").text
+    assert "End Time" in modal_title
+
+    # Modify end time (add 2 hours)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    new_dt = dt + timedelta(hours=2)
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Verify end time changed
+    updated_end_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="end_time"]'
+    )
+    updated_end_time = updated_end_time_cell.text
+    assert updated_end_time != original_end_time
+
+
+def test_edit_both_times_and_verify_recalculation(driver):
+    """Test editing both start and end times and verify hours_worked recalculates."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("120")
+    driver.find_element(By.ID, "tips").clear()
+    driver.find_element(By.ID, "tips").send_keys("30")
+    driver.find_element(By.ID, "gasCost").clear()
+    driver.find_element(By.ID, "gasCost").send_keys("10")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Get original hours worked
+    table = driver.find_element(By.ID, "shiftsBody")
+    original_table_text = table.text
+
+    # Edit start time (1 hour earlier)
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    start_time_cell.click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    new_dt = dt - timedelta(hours=1)
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Verify table updated (hours worked should have changed)
+    table = driver.find_element(By.ID, "shiftsBody")
+    updated_table_text = table.text
+    # The hours worked and hourly pay should be different now
+    assert updated_table_text != original_table_text
+
+
+def test_edit_end_time_before_start_time_validation(driver):
+    """Test that setting end time before start time shows validation error."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Click end_time cell
+    end_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="end_time"]'
+    )
+    end_time_cell.click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Try to set end time to 2 hours BEFORE current time (should fail validation)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    # Set to way before start time
+    new_dt = dt - timedelta(hours=5)
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    # Wait for error toast
+    toast = WebDriverWait(driver, 5).until(lambda d: d.find_element(By.ID, "toast"))
+
+    # Wait for toast to populate
+    max_retries = 10
+    for i in range(max_retries):
+        if toast.text and (
+            "after" in toast.text.lower() or "before" in toast.text.lower()
+        ):
+            break
+        time.sleep(0.2)
+        toast = driver.find_element(By.ID, "toast")
+
+    assert toast.text, "End time must be after start time"
+    assert "after" in toast.text.lower() or "before" in toast.text.lower()
+
+
+def test_edit_start_time_after_end_time_validation(driver):
+    """Test that setting start time after end time shows validation error."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Click start_time cell
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    start_time_cell.click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Try to set start time to way in the future (after end time)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    new_dt = dt + timedelta(hours=10)  # Way after end time
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    # Wait for error toast
+    toast = WebDriverWait(driver, 5).until(lambda d: d.find_element(By.ID, "toast"))
+
+    max_retries = 10
+    for i in range(max_retries):
+        if toast.text and (
+            "before" in toast.text.lower() or "after" in toast.text.lower()
+        ):
+            break
+        time.sleep(0.2)
+        toast = driver.find_element(By.ID, "toast")
+
+    assert toast.text, "Start time must be before end time"
+    assert "before" in toast.text.lower() or "after" in toast.text.lower()
+
+
+def test_datetime_modal_cancel_closes(driver):
+    """Test that canceling the datetime edit modal closes it without changes."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create a shift
+    driver.find_element(By.ID, "startOdo").send_keys("10000")
+    driver.find_element(By.ID, "startShiftBtn").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endShiftBtn").click()
+
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    time.sleep(2)
+
+    # Get original start time
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    original_start_time = start_time_cell.text
+    start_time_cell.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Modify the value but cancel
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    current_value = datetime_input.get_attribute("value")
+
+    from datetime import datetime, timedelta
+
+    dt = datetime.fromisoformat(current_value)
+    new_dt = dt - timedelta(hours=3)
+    new_value = new_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Use JavaScript to set the value
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        new_value,
+    )
+
+    # Click cancel instead of submit
+    driver.find_element(By.ID, "datetimeModalCancel").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    time.sleep(1)
+
+    # Verify start time didn't change
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    current_start_time = start_time_cell.text
+    assert current_start_time == original_start_time
 
 
 if __name__ == "__main__":
