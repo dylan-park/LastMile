@@ -94,3 +94,7 @@ Environment variables (optional):
 - [x] Allow deletion of shifts
   - [x] Create shift deletion endpoint
   - [x] Add shift deletion to UI
+- [ ] Improve tests
+  - [ ] Look into locking teardown endoint behind test flag
+  - [ ] Make e2e tests preserve original database
+  - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
