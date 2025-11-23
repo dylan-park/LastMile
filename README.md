@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.86%2B-orange.svg)](https://www.rust-lang.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.3-purple.svg)](https://surrealdb.com/)
 
-A self-hosted web application for independent delivery couriers to track shifts, earnings, and vehicle maintenance. Built with Rust and SurrealDB, LastMile helps drivers stay on top of their finances and vehicle health without relying on third-party services.
+A self-hosted web application for independent delivery couriers to track shifts, earnings, and vehicle maintenance. Built with Rust and SurrealDB, LastMile helps drivers stay on top of their finances and vehicle health without relying on third-party services or tedious spreadsheets.
 
 ## Motivation
 
-As a delivery driver, keeping track of earnings, hours, and vehicle maintenance across multiple shifts can be tedious. Most tracking solutions either require subscriptions, share your data with third parties, or lack the flexibility needed for gig work. LastMile was built to solve this problem: a simple, privacy-focused tool that runs entirely on your own hardware, giving you complete control over your data.
+LastMile was born out of necessity. When circumstances led me to food delivery work to make ends meet, I found myself struggling with the same problems many gig workers face: tracking earnings, hours, and vehicle maintenance across shifts was time-consuming and cumbersome. Most solutions either cost money I didn't want to spend, compromised privacy, or simply didn't fit the flexible nature of delivery work. As a developer, I had the skills to build something that worked better for me, so I did. LastMile is a self-hosted, privacy-focused tool that gives drivers complete control over their data, with no subscriptions or third-party dependencies, and it provides confidence come tax season you have work data you can trust.
 
 ## Features
 
