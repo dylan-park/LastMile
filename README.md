@@ -147,6 +147,7 @@ pytest scripts/e2e.py -v
   - [ ] Look into locking teardown endpoint behind test flag
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
+- [ ] Investigate potential for CSV export to export current view
 
 ## License
 
