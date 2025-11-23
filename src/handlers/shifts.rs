@@ -231,13 +231,13 @@ pub async fn update_shift(
     let final_end_time = new_end_time.or(shift.end_time);
 
     // Validate: end_time must be after start_time if both exist
-    if let Some(end) = final_end_time {
-        if end <= final_start_time {
-            warn!("Invalid time range: end_time must be after start_time");
-            return Err(AppError::Database(Box::new(surrealdb::Error::Api(
-                surrealdb::error::Api::Query("End time must be after start time".to_string()),
-            ))));
-        }
+    if let Some(end) = final_end_time
+        && end <= final_start_time
+    {
+        warn!("Invalid time range: end_time must be after start_time");
+        return Err(AppError::Database(Box::new(surrealdb::Error::Api(
+            surrealdb::error::Api::Query("End time must be after start time".to_string()),
+        ))));
     }
 
     // Merge updates with existing values, normalizing user inputs
@@ -301,10 +301,10 @@ pub async fn update_shift(
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
     // Update all maintenance items with new remaining mileage if odometer_end changed
-    if let Some(new_odometer_end) = odometer_end {
-        if shift.odometer_end != Some(new_odometer_end) {
-            update_all_maintenance_remaining_mileage(&state.db, new_odometer_end).await?;
-        }
+    if let Some(new_odometer_end) = odometer_end
+        && shift.odometer_end != Some(new_odometer_end)
+    {
+        update_all_maintenance_remaining_mileage(&state.db, new_odometer_end).await?;
     }
 
     info!("Shift updated successfully: id={}", id);
