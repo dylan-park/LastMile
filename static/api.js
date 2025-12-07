@@ -68,8 +68,18 @@ const API = {
     return await response.json();
   },
 
-  async exportCSV() {
-    const response = await fetch(`${API_URL}/shifts/export`);
+  async exportCSV(startUTC = null, endUTC = null) {
+    let url = `${API_URL}/shifts/export`;
+
+    if (startUTC && endUTC) {
+      const params = new URLSearchParams({
+        start: startUTC,
+        end: endUTC,
+      });
+      url += `?${params}`;
+    }
+
+    const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to export CSV");
     return await response.blob();
   },

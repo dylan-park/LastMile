@@ -158,6 +158,12 @@ pub struct DateRangeQuery {
     pub end: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OptionalDateRangeQuery {
+    pub start: Option<String>,
+    pub end: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MaintenanceItem {
     #[serde(serialize_with = "serialize_thing_as_string")]
