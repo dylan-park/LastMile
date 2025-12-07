@@ -107,7 +107,6 @@ function utcToDatetimeLocal(utcIsoString) {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
-
 // ===== NUMBER FORMATTING =====
 function formatMoney(value) {
   return parseFloat(value || 0).toFixed(2);

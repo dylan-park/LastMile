@@ -16,7 +16,9 @@ pub enum AppError {
     #[error("Active shift already exists")]
     ActiveShiftExists,
 
-    #[error("Invalid odometer reading: end ({end}) must be greater than or equal to start ({start})")]
+    #[error(
+        "Invalid odometer reading: end ({end}) must be greater than or equal to start ({start})"
+    )]
     InvalidOdometer { start: i32, end: i32 },
 
     #[error("Invalid monetary value: {0} must be non-negative")]

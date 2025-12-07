@@ -406,10 +406,12 @@ html.dark-mode .miles-icon {
 
 /* Loading state for stats */
 .stat-value.loading {
-    background: linear-gradient(90deg,
-            var(--bg-tertiary) 25%,
-            var(--bg-hover) 50%,
-            var(--bg-tertiary) 75%);
+    background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 25%,
+        var(--bg-hover) 50%,
+        var(--bg-tertiary) 75%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
@@ -447,9 +449,11 @@ html.dark-mode .miles-icon {
 
 /* ===== ACTIVE SHIFT BANNER ===== */
 .active-shift-banner {
-    background: linear-gradient(135deg,
-            var(--accent) 0%,
-            var(--accent-dark) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--accent) 0%,
+        var(--accent-dark) 100%
+    );
     color: white;
     padding: var(--spacing-lg);
     border-radius: 12px;
@@ -523,7 +527,7 @@ html.dark-mode .miles-icon {
     border-top: 1px solid var(--border-color);
 }
 
-.maintenance-controls+.table-actions {
+.maintenance-controls + .table-actions {
     margin-top: 0;
     padding-top: var(--spacing-md);
 }
@@ -785,7 +789,6 @@ td[contenteditable="true"]:focus {
     background: var(--accent-light);
     outline: 1px solid var(--accent);
 }
-
 
 .notes-cell {
     max-width: 250px;

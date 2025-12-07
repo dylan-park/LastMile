@@ -1124,6 +1124,7 @@ def test_csv_export_month_view(driver):
 
     # Calculate a date 2 months ago
     from datetime import datetime, timedelta
+
     two_months_ago = datetime.now() - timedelta(days=60)
     datetime_str = two_months_ago.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -1162,13 +1163,13 @@ def test_csv_export_month_view(driver):
     # Verify CSV contains ONLY the in-range shift
     csv_content = response.text
     lines = csv_content.strip().split("\n")
-    
+
     # Should have header + 1 shift (only the in-range one)
     assert len(lines) == 2, f"Expected 2 lines (header + 1 shift), got {len(lines)}"
-    
+
     # Verify the in-range shift is present
     assert "In-range shift" in csv_content
-    
+
     # Verify the out-of-range shift is NOT present
     assert "Out-of-range shift" not in csv_content
 
@@ -1269,6 +1270,7 @@ def test_csv_export_custom_range(driver):
 
     # Calculate a date 30 days ago (outside the 7-day range we'll test)
     from datetime import datetime, timedelta
+
     thirty_days_ago = datetime.now() - timedelta(days=30)
     datetime_str = thirty_days_ago.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -1304,13 +1306,13 @@ def test_csv_export_custom_range(driver):
     # Verify CSV contains ONLY the in-range shift
     csv_content = response.text
     lines = csv_content.strip().split("\n")
-    
+
     # Should have header + 1 shift (only the one in 7-day range)
     assert len(lines) == 2, f"Expected 2 lines (header + 1 shift), got {len(lines)}"
-    
+
     # Verify the in-range shift is present
     assert "In 7-day range" in csv_content
-    
+
     # Verify the out-of-range shift is NOT present
     assert "Outside 7-day range" not in csv_content
 
