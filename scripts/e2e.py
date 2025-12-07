@@ -19,7 +19,9 @@ APP_HOST = (
     "host.docker.internal" if os.getenv("GITHUB_ACTIONS") == "true" else "127.0.0.1"
 )
 APP_URL = f"http://{APP_HOST}:3000"
-API_URL = f"{APP_URL}/api"
+
+API_HOST = "localhost" if os.getenv("GITHUB_ACTIONS") == "true" else APP_HOST
+API_URL = f"http://{API_HOST}:3000/api"
 
 
 def port_open(host, port, timeout=1.0):
