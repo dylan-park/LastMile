@@ -2044,6 +2044,7 @@ dependencies = [
  "chrono",
  "futures",
  "http-body",
+ "http-body-util",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
