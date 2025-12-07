@@ -1,6 +1,6 @@
 # LastMile
 
-[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.86%2B-orange.svg)](https://www.rust-lang.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.3-purple.svg)](https://surrealdb.com/)
+[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.88.0%2B-orange.svg)](https://www.rust-lang.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.4-purple.svg)](https://surrealdb.com/)
 
 A self-hosted web application for independent delivery couriers to track shifts, earnings, and vehicle maintenance. Built with Rust and SurrealDB, LastMile helps drivers stay on top of their finances and vehicle health without relying on third-party services or tedious spreadsheets.
 
@@ -15,7 +15,7 @@ LastMile was born out of necessity. When circumstances led me to food delivery w
 - **Flexible Filtering** - Filter shifts by month, all time, or custom date ranges
 - **Maintenance Tracking** - Set up mileage-based maintenance reminders for oil changes, tire rotations, and more
 - **Inline Editing** - Click any field in the table to edit shift details on the fly
-- **CSV Export** - Export all shift data for external analysis or tax preparation
+- **CSV Export** - Export shift data with automatic filtering based on your current view (month, all time, or custom range) for external analysis or tax preparation
 - **Dark Mode** - Easy on the eyes during late-night shifts
 - **Fully Self-Hosted** - Your data stays on your machine, no cloud required
 - **Responsive Design** - Works on desktop and mobile devices
@@ -32,7 +32,7 @@ LastMile was born out of necessity. When circumstances led me to food delivery w
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) 1.86 or higher
+- [Rust](https://rustup.rs/) 1.88 or higher
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Local Development
@@ -191,7 +191,6 @@ pytest scripts/e2e.py -v
   - [ ] Look into locking teardown endpoint behind test flag
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
-- [ ] Investigate potential for CSV export to export current view
 
 ## License
 

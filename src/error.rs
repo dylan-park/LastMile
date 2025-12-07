@@ -16,13 +16,14 @@ pub enum AppError {
     #[error("Active shift already exists")]
     ActiveShiftExists,
 
-    #[error(
-        "Invalid odometer reading: end ({end}) must be greater than or equal to start ({start})"
-    )]
+    #[error("Invalid odometer reading: end ({end}) must be greater than or equal to start ({start})")]
     InvalidOdometer { start: i32, end: i32 },
 
     #[error("Invalid monetary value: {0} must be non-negative")]
     InvalidMonetaryValue(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
 }
 
 // Helper conversion to avoid .map_err(Box::new) everywhere
@@ -47,6 +48,7 @@ impl IntoResponse for AppError {
             AppError::ActiveShiftExists => (StatusCode::CONFLICT, self.to_string()),
             AppError::InvalidOdometer { .. } => (StatusCode::BAD_REQUEST, self.to_string()),
             AppError::InvalidMonetaryValue(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            AppError::InvalidInput(_) => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 
         (status, Json(serde_json::json!({ "error": message }))).into_response()

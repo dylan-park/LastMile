@@ -17,8 +17,8 @@ use crate::{
     },
     error::{AppError, Result},
     models::{
-        DateRangeQuery, EndShiftRequest, Shift, ShiftRecord, ShiftUpdate, StartShiftRequest,
-        UpdateShiftRequest,
+        DateRangeQuery, EndShiftRequest, OptionalDateRangeQuery, Shift, ShiftRecord, ShiftUpdate,
+        StartShiftRequest, UpdateShiftRequest,
     },
     state::AppState,
     validation,
@@ -326,10 +326,38 @@ pub async fn delete_shift(
     Ok(Json(deleted_shift))
 }
 
-pub async fn export_csv(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse> {
+pub async fn export_csv(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<OptionalDateRangeQuery>,
+) -> Result<impl IntoResponse> {
     info!("Exporting shifts to CSV");
 
-    let shifts = query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time ASC").await?;
+    // Fetch shifts based on whether date range is provided
+    let shifts = if let (Some(start_str), Some(end_str)) = (params.start, params.end) {
+        info!("Exporting shifts in range: {} to {}", start_str, end_str);
+
+        // Parse the ISO 8601 datetime strings
+        let start_time: DateTime<Utc> = start_str.parse().map_err(|e| {
+            warn!("Invalid start date format: {}", e);
+            AppError::InvalidInput(format!("Invalid start date format: {}", e))
+        })?;
+
+        let end_time: DateTime<Utc> = end_str.parse().map_err(|e| {
+            warn!("Invalid end date format: {}", e);
+            AppError::InvalidInput(format!("Invalid end date format: {}", e))
+        })?;
+
+        // Convert to SurrealDB datetime for query
+        let start_surreal: surrealdb::sql::Datetime = start_time.into();
+        let end_surreal: surrealdb::sql::Datetime = end_time.into();
+
+        // Query shifts within the date range
+        let query = "SELECT * FROM shifts WHERE start_time >= $start AND start_time <= $end ORDER BY start_time ASC";
+        query_shifts_with_date_range(&state.db, query, start_surreal, end_surreal).await?
+    } else {
+        info!("Exporting all shifts");
+        query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time ASC").await?
+    };
 
     let mut csv = String::from(
         "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",

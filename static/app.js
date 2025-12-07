@@ -227,8 +227,7 @@ function handleDatetimeClick(e) {
   }
 
   // Set modal title
-  const title =
-    field === "start_time" ? "Edit Start Time" : "Edit End Time";
+  const title = field === "start_time" ? "Edit Start Time" : "Edit End Time";
   document.getElementById("datetimeModalTitle").textContent = title;
 
   // Convert UTC to local datetime-local format and populate input
@@ -297,7 +296,6 @@ async function handleDatetimeSubmit() {
   }
 }
 
-
 async function handleDeleteShift(id) {
   if (!confirm("Are you sure you want to delete this shift?")) {
     return;
@@ -320,11 +318,51 @@ async function handleDeleteShift(id) {
 async function handleExportCSV() {
   try {
     UI.showLoading();
-    const blob = await API.exportCSV();
+
+    // Determine date range and filename based on current filter
+    let startUTC = null;
+    let endUTC = null;
+    let filename = "lastmile_shifts.csv"; // Default for "all time"
+
+    if (state.statsPeriod === "month") {
+      const dateRange = getLocalDateRange("month");
+      if (dateRange) {
+        startUTC = dateRange.start;
+        endUTC = dateRange.end;
+
+        // Generate filename like: lastmile_shifts_2025-12.csv
+        const startDate = new Date(startUTC);
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, "0");
+        filename = `lastmile_shifts_${year}-${month}.csv`;
+      }
+    } else if (state.statsPeriod === "custom") {
+      // Validate custom range
+      if (!state.customDateRange.start || !state.customDateRange.end) {
+        UI.showToast("Please select a valid custom date range", "error");
+        return;
+      }
+
+      const dateRange = getLocalDateRange("custom", state.customDateRange);
+      if (dateRange) {
+        startUTC = dateRange.start;
+        endUTC = dateRange.end;
+
+        // Generate filename like: lastmile_shifts_2025-11-01_to_2025-11-30.csv
+        const startDate = new Date(startUTC);
+        const endDate = new Date(endUTC);
+        const startStr = formatDateForInput(startDate);
+        const endStr = formatDateForInput(endDate);
+        filename = `lastmile_shifts_${startStr}_to_${endStr}.csv`;
+      }
+    }
+    // For "all" period, use default filename and no date range
+
+    const blob = await API.exportCSV(startUTC, endUTC);
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "lastmile_shifts.csv";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

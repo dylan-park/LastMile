@@ -1134,3 +1134,248 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
     // Verify hourly_pay: (120 + 30 - 10) / 4 = 35.00
     assert_eq!(updated_shift.hourly_pay.unwrap(), dec!(35.0));
 }
+
+#[tokio::test]
+async fn test_export_csv_all_shifts() {
+    use axum::response::IntoResponse;
+    use http_body_util::BodyExt;
+
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create multiple shifts
+    for i in 0..3 {
+        let start_request = StartShiftRequest {
+            odometer_start: 10000 + (i * 100),
+        };
+        let shift = start_shift(State(state.clone()), Json(start_request))
+            .await
+            .unwrap()
+            .0;
+        let shift_id = shift.id.id.to_string();
+
+        let end_request = EndShiftRequest {
+            odometer_end: 10100 + (i * 100),
+            earnings: Some(dec!(100.0)),
+            tips: Some(dec!(20.0)),
+            gas_cost: Some(dec!(15.0)),
+            notes: Some(format!("Shift {}", i)),
+        };
+        let _ = end_shift(
+            State(state.clone()),
+            axum::extract::Path(shift_id),
+            Json(end_request),
+        )
+        .await;
+    }
+
+    // Export all shifts (no query parameters)
+    let params = OptionalDateRangeQuery {
+        start: None,
+        end: None,
+    };
+    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    assert!(result.is_ok());
+
+    // Convert to response and extract CSV content
+    let response = result.unwrap().into_response();
+    let status = response.status();
+    let body = response.into_body();
+    let bytes = body.collect().await.unwrap().to_bytes();
+    let csv = String::from_utf8(bytes.to_vec()).unwrap();
+
+    // Verify status code
+    assert_eq!(status, axum::http::StatusCode::OK);
+
+    // Verify CSV content
+    let lines: Vec<&str> = csv.lines().collect();
+    assert_eq!(lines.len(), 4); // Header + 3 shifts
+
+    // Verify header row
+    assert!(lines[0].contains("ID,Start Time,End Time"));
+    assert!(lines[0].contains("Hours Worked"));
+    assert!(lines[0].contains("Odometer Start,Odometer End"));
+    assert!(lines[0].contains("Earnings,Tips,Gas Cost"));
+
+    // Verify each shift is in the CSV
+    assert!(csv.contains("Shift 0"));
+    assert!(csv.contains("Shift 1"));
+    assert!(csv.contains("Shift 2"));
+
+    // Verify monetary values are present
+    assert!(csv.contains("100")); // earnings
+    assert!(csv.contains("20")); // tips
+    assert!(csv.contains("15")); // gas cost
+    assert!(csv.contains("105")); // day total (100 + 20 - 15)
+}
+
+#[tokio::test]
+async fn test_export_csv_with_date_range() {
+    use axum::response::IntoResponse;
+    use chrono::Utc;
+    use http_body_util::BodyExt;
+
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    // Create shifts with specific times
+    let base_time = Utc::now();
+
+    // Shift 1: 2 days ago (start and END it)
+    let start_request = StartShiftRequest {
+        odometer_start: 10000,
+    };
+    let shift1 = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift1_id = shift1.id.id.to_string();
+
+    // End shift1 first
+    let end_request1 = EndShiftRequest {
+        odometer_end: 10100,
+        earnings: Some(dec!(50.0)),
+        tips: None,
+        gas_cost: None,
+        notes: Some("Old shift".to_string()),
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift1_id.clone()),
+        Json(end_request1),
+    )
+    .await;
+
+    // Now update shift1's start time to 2 days ago
+    let old_start = (base_time - chrono::Duration::days(2)).to_rfc3339();
+    let update1 = UpdateShiftRequest {
+        start_time: Some(old_start),
+        odometer_end: None,
+        earnings: None,
+        tips: None,
+        gas_cost: None,
+        notes: None,
+        end_time: None,
+        odometer_start: None,
+    };
+    let _ = update_shift(
+        State(state.clone()),
+        axum::extract::Path(shift1_id),
+        Json(update1),
+    )
+    .await;
+
+    // Shift 2: today
+    let start_request = StartShiftRequest {
+        odometer_start: 10100,
+    };
+    let shift2 = start_shift(State(state.clone()), Json(start_request))
+        .await
+        .unwrap()
+        .0;
+    let shift2_id = shift2.id.id.to_string();
+
+    let end_request = EndShiftRequest {
+        odometer_end: 10200,
+        earnings: Some(dec!(100.0)),
+        tips: Some(dec!(20.0)),
+        gas_cost: Some(dec!(15.0)),
+        notes: Some("Recent shift".to_string()),
+    };
+    let _ = end_shift(
+        State(state.clone()),
+        axum::extract::Path(shift2_id),
+        Json(end_request),
+    )
+    .await;
+
+    // Export only today's shifts
+    let start_of_today = (base_time - chrono::Duration::hours(12)).to_rfc3339();
+    let end_of_today = (base_time + chrono::Duration::hours(12)).to_rfc3339();
+
+    let params = OptionalDateRangeQuery {
+        start: Some(start_of_today),
+        end: Some(end_of_today),
+    };
+    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    assert!(result.is_ok());
+
+    // Convert to response and extract CSV content
+    let response = result.unwrap().into_response();
+    let status = response.status();
+    let body = response.into_body();
+    let bytes = body.collect().await.unwrap().to_bytes();
+    let csv = String::from_utf8(bytes.to_vec()).unwrap();
+
+    // Verify status code
+    assert_eq!(status, axum::http::StatusCode::OK);
+
+    // Verify CSV content
+    let lines: Vec<&str> = csv.lines().collect();
+
+    // Should only have header + 1 shift (the recent one)
+    assert_eq!(lines.len(), 2);
+
+    // Verify only the recent shift is included
+    assert!(csv.contains("Recent shift"));
+    assert!(!csv.contains("Old shift"));
+
+    // Verify the recent shift's data
+    assert!(csv.contains("10100")); // odometer start
+    assert!(csv.contains("10200")); // odometer end
+    assert!(csv.contains("100")); // earnings
+}
+
+#[tokio::test]
+async fn test_export_csv_empty_database() {
+    use axum::response::IntoResponse;
+    use http_body_util::BodyExt;
+
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    let params = OptionalDateRangeQuery {
+        start: None,
+        end: None,
+    };
+    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    assert!(result.is_ok());
+
+    // Convert to response and extract CSV content
+    let response = result.unwrap().into_response();
+    let status = response.status();
+    let body = response.into_body();
+    let bytes = body.collect().await.unwrap().to_bytes();
+    let csv = String::from_utf8(bytes.to_vec()).unwrap();
+
+    // Verify status code
+    assert_eq!(status, axum::http::StatusCode::OK);
+
+    // Verify CSV content
+    let lines: Vec<&str> = csv.lines().collect();
+
+    // Should only have header
+    assert_eq!(lines.len(), 1);
+    assert!(lines[0].contains("ID,Start Time,End Time"));
+    assert!(lines[0].contains("Hours Worked"));
+    assert!(lines[0].contains("Odometer Start,Odometer End"));
+
+    // Verify no data rows
+    assert!(!csv.contains("10000")); // No odometer readings
+    assert!(!csv.contains("100.0")); // No earnings
+}
+
+#[tokio::test]
+async fn test_export_csv_invalid_date_format() {
+    let db = common::setup_test_db().await;
+    let state = Arc::new(AppState { db });
+
+    let params = OptionalDateRangeQuery {
+        start: Some("invalid-date".to_string()),
+        end: Some("2025-12-31T23:59:59Z".to_string()),
+    };
+    let result = export_csv(State(state), axum::extract::Query(params)).await;
+
+    // Verify the export fails with invalid date format
+    assert!(result.is_err());
+}
