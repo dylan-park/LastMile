@@ -957,6 +957,394 @@ def test_csv_export_button_exists(driver):
     assert export_btn.is_enabled()
 
 
+def test_csv_export_all_time(driver):
+    """Test CSV export with 'All Time' filter - verify API call and response."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create a test shift first (following existing pattern)
+    odo_input = driver.find_element(By.ID, "startOdo")
+    odo_input.send_keys("10000")
+    start_btn = driver.find_element(By.ID, "startShiftBtn")
+    start_btn.click()
+
+    # Wait for active shift banner
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    # Click End Shift button
+    end_shift_btn = driver.find_element(By.ID, "endShiftBtn")
+    end_shift_btn.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # Fill in end shift data
+    driver.find_element(By.ID, "endOdo").send_keys("10100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("100")
+    driver.find_element(By.ID, "tips").clear()
+    driver.find_element(By.ID, "tips").send_keys("20")
+    driver.find_element(By.ID, "gasCost").clear()
+    driver.find_element(By.ID, "gasCost").send_keys("15")
+    driver.find_element(By.ID, "notes").send_keys("Test shift for CSV")
+
+    # Submit
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+    time.sleep(1)
+
+    # Make API call to export CSV (simulating button click)
+    response = requests.get(f"{API_URL}/shifts/export")
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "text/csv"
+    assert "attachment" in response.headers.get("Content-Disposition", "")
+
+    # Verify CSV content
+    csv_content = response.text
+    lines = csv_content.strip().split("\n")
+
+    # Should have header + at least 1 shift
+    assert len(lines) >= 2
+
+    # Verify header
+    assert "ID,Start Time,End Time" in lines[0]
+    assert "Odometer Start,Odometer End" in lines[0]
+    assert "Earnings,Tips,Gas Cost" in lines[0]
+
+    # Verify our test shift is in the CSV
+    assert "Test shift for CSV" in csv_content
+    assert "10000" in csv_content  # odometer start
+    assert "10100" in csv_content  # odometer end
+
+
+def test_csv_export_month_view(driver):
+    """Test CSV export with 'This Month' filter - verify date range filtering."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create first shift (will be kept in current month)
+    odo_input = driver.find_element(By.ID, "startOdo")
+    odo_input.send_keys("11000")
+    start_btn = driver.find_element(By.ID, "startShiftBtn")
+    start_btn.click()
+
+    # Wait for active shift banner
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    # Click End Shift button
+    end_shift_btn = driver.find_element(By.ID, "endShiftBtn")
+    end_shift_btn.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # Fill in end shift data
+    driver.find_element(By.ID, "endOdo").send_keys("11100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("50")
+    driver.find_element(By.ID, "notes").send_keys("In-range shift")
+
+    # Submit
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+    time.sleep(1)
+
+    # Create second shift (will be edited to be outside current month)
+    odo_input = driver.find_element(By.ID, "startOdo")
+    odo_input.send_keys("11100")
+    start_btn = driver.find_element(By.ID, "startShiftBtn")
+    start_btn.click()
+
+    # Wait for active shift banner
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    # Click End Shift button
+    end_shift_btn = driver.find_element(By.ID, "endShiftBtn")
+    end_shift_btn.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # Fill in end shift data
+    driver.find_element(By.ID, "endOdo").send_keys("11200")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("75")
+    driver.find_element(By.ID, "notes").send_keys("Out-of-range shift")
+
+    # Submit
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+    time.sleep(2)
+
+    # Now edit the second shift's start time to be 2 months ago
+    # Find start time cell for the specific shift
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    start_time_cell.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Calculate a date 2 months ago
+    from datetime import datetime, timedelta
+    two_months_ago = datetime.now() - timedelta(days=60)
+    datetime_str = two_months_ago.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Update the datetime input using JS (more robust)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        datetime_str,
+    )
+
+    # Submit the datetime change
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+    time.sleep(1)
+
+    # Test API with month date range
+    from datetime import timezone
+
+    now = datetime.now(timezone.utc)
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Make API call with date range
+    params = {
+        "start": start_of_month.isoformat().replace("+00:00", "Z"),
+        "end": now.isoformat().replace("+00:00", "Z"),
+    }
+    response = requests.get(f"{API_URL}/shifts/export", params=params)
+    assert response.status_code == 200
+
+    # Verify CSV contains ONLY the in-range shift
+    csv_content = response.text
+    lines = csv_content.strip().split("\n")
+    
+    # Should have header + 1 shift (only the in-range one)
+    assert len(lines) == 2, f"Expected 2 lines (header + 1 shift), got {len(lines)}"
+    
+    # Verify the in-range shift is present
+    assert "In-range shift" in csv_content
+    
+    # Verify the out-of-range shift is NOT present
+    assert "Out-of-range shift" not in csv_content
+
+
+def test_csv_export_custom_range(driver):
+    """Test CSV export with custom date range - verify filtering excludes out-of-range shifts."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Create first shift (will be kept in range)
+    odo_input = driver.find_element(By.ID, "startOdo")
+    odo_input.send_keys("12000")
+    start_btn = driver.find_element(By.ID, "startShiftBtn")
+    start_btn.click()
+
+    # Wait for active shift banner
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    # Click End Shift button
+    end_shift_btn = driver.find_element(By.ID, "endShiftBtn")
+    end_shift_btn.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # Fill in end shift data
+    driver.find_element(By.ID, "endOdo").send_keys("12100")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("75")
+    driver.find_element(By.ID, "notes").send_keys("In 7-day range")
+
+    # Submit
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+    time.sleep(1)
+
+    # Create second shift (will be edited to be outside 7-day range)
+    odo_input = driver.find_element(By.ID, "startOdo")
+    odo_input.send_keys("12100")
+    start_btn = driver.find_element(By.ID, "startShiftBtn")
+    start_btn.click()
+
+    # Wait for active shift banner
+    WebDriverWait(driver, 10).until(
+        lambda d: "hidden"
+        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+    )
+
+    # Click End Shift button
+    end_shift_btn = driver.find_element(By.ID, "endShiftBtn")
+    end_shift_btn.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+
+    # Fill in end shift data
+    driver.find_element(By.ID, "endOdo").send_keys("12200")
+    driver.find_element(By.ID, "earnings").clear()
+    driver.find_element(By.ID, "earnings").send_keys("90")
+    driver.find_element(By.ID, "notes").send_keys("Outside 7-day range")
+
+    # Submit
+    driver.find_element(By.ID, "modalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+    )
+    time.sleep(2)
+
+    # Now edit the second shift's start time to be 30 days ago (outside 7-day range)
+    # Find start time cell for the specific shift
+    start_time_cell = driver.find_element(
+        By.CSS_SELECTOR, 'td.datetime-cell[data-field="start_time"]'
+    )
+    start_time_cell.click()
+
+    # Wait for modal
+    WebDriverWait(driver, 5).until(
+        lambda d: "show"
+        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+
+    # Calculate a date 30 days ago (outside the 7-day range we'll test)
+    from datetime import datetime, timedelta
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    datetime_str = thirty_days_ago.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Update the datetime input using JS (more robust)
+    datetime_input = driver.find_element(By.ID, "datetimeInput")
+    driver.execute_script(
+        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+        datetime_input,
+        datetime_str,
+    )
+
+    # Submit the datetime change
+    driver.find_element(By.ID, "datetimeModalSubmit").click()
+
+    # Wait for modal to close
+    WebDriverWait(driver, 10).until(
+        lambda d: "show"
+        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+    )
+    time.sleep(1)
+
+    # Test API with custom 7-day date range
+    from datetime import timezone
+
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=7)).isoformat().replace("+00:00", "Z")
+    end = now.isoformat().replace("+00:00", "Z")
+
+    params = {"start": start, "end": end}
+    response = requests.get(f"{API_URL}/shifts/export", params=params)
+    assert response.status_code == 200
+
+    # Verify CSV contains ONLY the in-range shift
+    csv_content = response.text
+    lines = csv_content.strip().split("\n")
+    
+    # Should have header + 1 shift (only the one in 7-day range)
+    assert len(lines) == 2, f"Expected 2 lines (header + 1 shift), got {len(lines)}"
+    
+    # Verify the in-range shift is present
+    assert "In 7-day range" in csv_content
+    
+    # Verify the out-of-range shift is NOT present
+    assert "Outside 7-day range" not in csv_content
+
+
+def test_csv_export_empty_database(driver):
+    """Test CSV export with no shifts - should return header only."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Export with empty database
+    response = requests.get(f"{API_URL}/shifts/export")
+    assert response.status_code == 200
+
+    csv_content = response.text
+    lines = csv_content.strip().split("\n")
+
+    # Should only have header
+    assert len(lines) == 1
+    assert "ID,Start Time,End Time" in lines[0]
+
+
+def test_csv_export_invalid_date_range(driver):
+    """Test CSV export with invalid date format - should return error."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Try to export with invalid date format
+    params = {"start": "invalid-date", "end": "2025-12-31T23:59:59Z"}
+    response = requests.get(f"{API_URL}/shifts/export", params=params)
+
+    # Should return error (400 Bad Request)
+    assert response.status_code == 400
+
+
 # ============================================================================
 # EDGE CASES AND VALIDATION
 # ============================================================================

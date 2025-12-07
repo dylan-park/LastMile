@@ -339,16 +339,12 @@ pub async fn export_csv(
         // Parse the ISO 8601 datetime strings
         let start_time: DateTime<Utc> = start_str.parse().map_err(|e| {
             warn!("Invalid start date format: {}", e);
-            AppError::Database(Box::new(surrealdb::Error::Api(
-                surrealdb::error::Api::Query("Invalid start date format".to_string()),
-            )))
+            AppError::InvalidInput(format!("Invalid start date format: {}", e))
         })?;
 
         let end_time: DateTime<Utc> = end_str.parse().map_err(|e| {
             warn!("Invalid end date format: {}", e);
-            AppError::Database(Box::new(surrealdb::Error::Api(
-                surrealdb::error::Api::Query("Invalid end date format".to_string()),
-            )))
+            AppError::InvalidInput(format!("Invalid end date format: {}", e))
         })?;
 
         // Convert to SurrealDB datetime for query
