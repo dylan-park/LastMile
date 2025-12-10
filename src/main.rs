@@ -140,7 +140,7 @@ async fn main() {
 
     let static_files = CacheControlLayer.layer(ServeDir::new("static"));
 
-    let app = Router::new()
+    let mut app = Router::new()
         // API routes
         // Shifts
         .route("/api/shifts", get(get_all_shifts))
@@ -159,9 +159,16 @@ async fn main() {
         .route(
             "/api/maintenance/calculate",
             get(calculate_required_maintenance),
-        )
-        // Testing
-        .route("/api/test/teardown", post(teardown_all_data))
+        );
+
+    // Conditionally enable test routes
+    let args: Vec<String> = std::env::args().collect();
+    if args.contains(&"--e2e".to_string()) {
+        info!("⚠️  TEST MODE ENABLED: /api/test/teardown is accessible ⚠️");
+        app = app.route("/api/test/teardown", post(teardown_all_data));
+    }
+
+    let app = app
         .with_state(state)
         .layer(cors)
         // Serve static files from ./static directory as fallback
