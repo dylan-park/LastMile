@@ -97,6 +97,10 @@ Environment variables (all optional):
 | `TZ` | Timezone for logs | `America/Chicago` |
 | `RUST_LOG` | Log level (`error`, `warn`, `info`, `debug`, `trace`) | `info` |
 
+### CLI Flags
+
+- `--e2e`: Enables the `/api/test/teardown` endpoint. **Only use this for e2e testing.**
+
 ## Database Backup
 
 If you have SurrealDB CLI installed, you can backup your database:
@@ -180,6 +184,11 @@ pip install -r requirements.txt
 pytest scripts/e2e.py -v
 ```
 
+Note: E2E tests require the backend to be running with the `--e2e` flag to enable the database teardown endpoint:
+```bash
+cargo run --release -- --e2e
+```
+
 ## Future Work
 
 - [ ] Improve CSS styling rules
@@ -188,7 +197,6 @@ pytest scripts/e2e.py -v
   - [ ] Investigate desktop site improvements
     - [ ] Improve table scrolling
 - [ ] Improve tests
-  - [ ] Look into locking teardown endpoint behind test flag
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
 

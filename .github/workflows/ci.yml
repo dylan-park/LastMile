@@ -90,7 +90,7 @@ jobs:
 
       # Start the backend/frontend
       - name: Start LastMile
-        run: nohup cargo run --release &
+        run: nohup cargo run --release -- --e2e &
 
       # Wait for startup
       - name: Wait for Startup
