@@ -802,6 +802,16 @@ td[contenteditable="true"]:focus {
     width: 80px;
 }
 
+/* ===== FOOTER ===== */
+.app-footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--spacing-xl);
+    padding-bottom: var(--spacing-md);
+    opacity: 0.8;
+}
+
 .enabled-cell {
     cursor: pointer;
     user-select: none;

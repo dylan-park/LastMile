@@ -2038,7 +2038,7 @@ dependencies = [
 
 [[package]]
 name = "lastmile"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "axum",
  "chrono",

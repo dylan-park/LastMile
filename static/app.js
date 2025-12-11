@@ -10,6 +10,18 @@ const state = {
   currentView: "shifts", // "shifts" or "maintenance"
 };
 
+async function loadVersion() {
+  try {
+    const result = await API.getVersion();
+    const versionEl = document.getElementById("appVersion");
+    if (versionEl) {
+      versionEl.textContent = result.version;
+    }
+  } catch (error) {
+    console.error("Error loading version:", error);
+  }
+}
+
 // ===== DATA LOADING =====
 async function loadShifts() {
   try {
@@ -729,6 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadShifts(),
     loadRequiredMaintenance(),
     loadMaintenanceItems(),
+    loadVersion(),
   ]).catch((error) => {
     console.error("Error during initial load:", error);
     UI.showToast("Failed to load initial data", "error");

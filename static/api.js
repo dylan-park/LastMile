@@ -1,6 +1,13 @@
 const API_URL = "/api";
 
 const API = {
+  // ===== GENERAL =====
+  async getVersion() {
+    const response = await fetch(`${API_URL}/version`);
+    if (!response.ok) throw new Error("Failed to fetch version");
+    return await response.json();
+  },
+
   // ===== SHIFTS =====
   async getShifts() {
     const response = await fetch(`${API_URL}/shifts`);

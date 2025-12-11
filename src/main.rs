@@ -4,7 +4,7 @@ use std::{
 };
 
 use axum::{
-    Router,
+    Json, Router,
     body::Body,
     http::{
         Request, Response,
@@ -142,6 +142,8 @@ async fn main() {
 
     let mut app = Router::new()
         // API routes
+        // General
+        .route("/api/version", get(get_version))
         // Shifts
         .route("/api/shifts", get(get_all_shifts))
         .route("/api/shifts/range", get(get_shifts_by_range))
@@ -187,4 +189,9 @@ async fn main() {
         db_path
     );
     axum::serve(listener, app).await.unwrap();
+}
+
+async fn get_version() -> Json<serde_json::Value> {
+    info!("Fetching application version");
+    Json(serde_json::json!({ "version": env!("CARGO_PKG_VERSION") }))
 }

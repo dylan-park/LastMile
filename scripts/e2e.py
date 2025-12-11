@@ -219,6 +219,32 @@ def test_custom_date_range_shows(driver):
     assert end_date.is_displayed()
 
 
+def test_app_version_display(driver):
+    """Test that the application version is displayed in the footer."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Find the version span
+    version_span = driver.find_element(By.ID, "appVersion")
+
+    # Wait for the text to change from the default placeholder "..."
+    # The version fetching happens asynchronously on load
+    WebDriverWait(driver, 5).until(
+        lambda d: d.find_element(By.ID, "appVersion").text != "..."
+    )
+
+    version_text = version_span.text
+
+    # Assert it looks like a version number (basic check)
+    # It should not be empty and should not be just "..."
+    assert version_text
+    assert version_text != "..."
+
+    # Check that it's contained within the footer text correctly
+    footer = driver.find_element(By.CLASS_NAME, "app-footer")
+    assert f"LastMile v{version_text}" in footer.text
+
+
 # ============================================================================
 # SHIFT WORKFLOW TESTS
 # ============================================================================

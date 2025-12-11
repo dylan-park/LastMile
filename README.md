@@ -1,6 +1,6 @@
 # LastMile
 
-[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.88.0%2B-orange.svg)](https://www.rust-lang.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.4-purple.svg)](https://surrealdb.com/)
+[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.88.0%2B-orange.svg)](https://www.rust-lang.org/) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.4-purple.svg)](https://surrealdb.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 A self-hosted web application for independent delivery couriers to track shifts, earnings, and vehicle maintenance. Built with Rust and SurrealDB, LastMile helps drivers stay on top of their finances and vehicle health without relying on third-party services or tedious spreadsheets.
 
@@ -199,7 +199,6 @@ cargo run --release -- --e2e
 - [ ] Improve tests
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
-- [ ] Add version number to page
 
 ## License
 
