@@ -219,6 +219,38 @@ def test_custom_date_range_shows(driver):
     assert end_date.is_displayed()
 
 
+def test_custom_date_range_defaults(driver):
+    """Test that custom date range defaults to the current week."""
+    driver.get(APP_URL)
+    wait_for_page_load(driver)
+
+    # Click “Custom Range”
+    driver.find_element(By.CSS_SELECTOR, '[data-period="custom"]').click()
+
+    # Wait for inputs to be visible
+    start_input = WebDriverWait(driver, 5).until(
+        EC.visibility_of_element_located((By.ID, "startDate"))
+    )
+    end_input = WebDriverWait(driver, 5).until(
+        EC.visibility_of_element_located((By.ID, "endDate"))
+    )
+
+    start_val = start_input.get_attribute("value")
+    end_val = end_input.get_attribute("value")
+
+    assert start_val, "Start date should be pre-filled"
+    assert end_val, "End date should be pre-filled"
+
+    # Verify it looks like a week (approx 6 days diff)
+    # This is a loose check to avoid timezone flake, but ensures logic ran
+    from datetime import datetime
+    s = datetime.strptime(start_val, "%Y-%m-%d")
+    e = datetime.strptime(end_val, "%Y-%m-%d")
+    
+    delta = (e - s).days
+    assert delta == 6, f"Expected 6 days difference (Mon-Sun), got {delta}"
+
+
 def test_app_version_display(driver):
     """Test that the application version is displayed in the footer."""
     driver.get(APP_URL)

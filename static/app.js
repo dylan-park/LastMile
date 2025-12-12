@@ -557,8 +557,19 @@ async function handleStatsPeriodToggle(period) {
     // Set default dates to current month if not already set
     if (!state.customDateRange.start && !state.customDateRange.end) {
       const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      // Calculate start of week (Monday)
+      // day: 0 (Sun) - 6 (Sat)
+      const day = now.getDay();
+      // specific logic: if Sunday (0), go back 6 days to get prev Monday
+      // otherwise go back (day - 1) days
+      const diff = day === 0 ? 6 : day - 1;
+
+      const firstDay = new Date(now);
+      firstDay.setDate(now.getDate() - diff);
+
+      const lastDay = new Date(firstDay);
+      lastDay.setDate(firstDay.getDate() + 6);
 
       document.getElementById("startDate").value = formatDateForInput(firstDay);
       document.getElementById("endDate").value = formatDateForInput(lastDay);
