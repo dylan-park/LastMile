@@ -199,6 +199,7 @@ cargo run --release -- --e2e
 - [ ] Improve tests
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
+- [ ] Change `Earnings` to `Fare` throughout application to reduce confusion
 
 ## License
 
