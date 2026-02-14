@@ -189,8 +189,39 @@ Note: E2E tests require the backend to be running with the `--e2e` flag to enabl
 cargo run --release -- --e2e
 ```
 
+## Demo Mode
+
+An optional demo mode can be run with:
+```bash
+cargo run --release -- --demo
+```
+This modifies the program in these ways:
+- In-memory database instead of on disk
+- Instanced sessions per browser session
+- Randomly generated data
+- Sessions left idle for more than 1 hour are cleared every hour
+
+Primarilly this is just for showcasing the different features of LastMile, so it could be used before committing to the program in order to try things out. All featues present in the main version are presesnt here aside from persistant data. 
+
 ## Future Work
 
+- [ ] Create Demo Mode
+  - [ ] Implement Demo Mode
+    - [x] Manually test Session > DB isolation
+    - [x] Manually test Session > Session isolation
+    - [x] Manually test session cleanup
+  - [x] Confirm base application works as expected
+    - [x] Data persists between restarts
+    - [x] Data persists when switching on and off demo mode
+    - [x] Data integrety held during additions, deletions, edits
+  - [ ] Add Demo Mode popup
+  - [x] Confirm E2E tests still pass
+    - [x] test_delete_shift
+      - Shift seems to be deleted successfully, but still persists in UI until page refresh
+      - Issue was also present with deleting maintenance items
+      - Issue was a change in the return type of the DELETE endpoints
+  - [x] Confirm unit tests still pass
+    - [x] Rewrite unit tests to fit new appstate layout
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
     - [ ] Improve table view

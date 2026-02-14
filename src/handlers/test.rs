@@ -1,4 +1,5 @@
-use axum::{Json, extract::State};
+use axum::{Json, Extension};
+use crate::middleware::SessionId;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::info;
@@ -15,18 +16,20 @@ pub struct TeardownResponse {
 /// Endpoint to clear all data - for testing only
 /// WARNING: This deletes ALL data from the database
 pub async fn teardown_all_data(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
 ) -> Result<Json<TeardownResponse>> {
-    info!("TEARDOWN: Clearing all database data");
+    info!("TEARDOWN: Clearing all database data for session {}", session_id.0);
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
     // Delete all shifts
     let shifts_query = "DELETE shifts;";
-    let mut shifts_result = state.db.query(shifts_query).await?;
+    let mut shifts_result = db.query(shifts_query).await?;
     let shifts_deleted: Vec<serde_json::Value> = shifts_result.take(0)?;
 
     // Delete all maintenance items
     let maintenance_query = "DELETE maintenance;";
-    let mut maintenance_result = state.db.query(maintenance_query).await?;
+    let mut maintenance_result = db.query(maintenance_query).await?;
     let maintenance_deleted: Vec<serde_json::Value> = maintenance_result.take(0)?;
 
     info!(

@@ -72,6 +72,10 @@ const API = {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Failed to delete shift");
+    // Don't parse JSON for 204 No Content responses
+    if (response.status === 204) {
+      return;
+    }
     return await response.json();
   },
 
@@ -131,6 +135,10 @@ const API = {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Failed to delete maintenance item");
+    // Don't parse JSON for 204 No Content responses
+    if (response.status === 204) {
+      return;
+    }
     return await response.json();
   },
 };
