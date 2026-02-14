@@ -17,6 +17,7 @@ async fn test_start_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -41,6 +42,7 @@ async fn test_start_shift_when_active_exists() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -72,6 +74,7 @@ async fn test_end_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -127,6 +130,7 @@ async fn test_end_shift_invalid_odometer() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -170,6 +174,7 @@ async fn test_get_active_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -202,6 +207,7 @@ async fn test_update_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -255,6 +261,7 @@ async fn test_delete_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -307,6 +314,7 @@ async fn test_get_all_shifts() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -330,6 +338,7 @@ async fn test_create_maintenance_item() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -360,6 +369,7 @@ async fn test_update_maintenance_item() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -410,6 +420,7 @@ async fn test_delete_maintenance_item() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -449,6 +460,7 @@ async fn test_calculate_required_maintenance_none_required() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -505,6 +517,7 @@ async fn test_calculate_required_maintenance_required() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -562,6 +575,7 @@ async fn test_calculate_required_maintenance_disabled_item() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -618,6 +632,7 @@ async fn test_create_maintenance_item_with_existing_shift() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -674,6 +689,7 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -757,6 +773,7 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
     let db_provider = Arc::new(DbProvider::Single(SingleDbProvider { db: db.clone() }));
     let state = Arc::new(AppState {
         db_provider: db_provider.clone(),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -823,6 +840,7 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     let db_provider = Arc::new(DbProvider::Single(SingleDbProvider { db: db.clone() }));
     let state = Arc::new(AppState {
         db_provider: db_provider.clone(),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -907,6 +925,7 @@ async fn test_update_shift_start_time() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -981,6 +1000,7 @@ async fn test_update_shift_end_time() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1058,6 +1078,7 @@ async fn test_update_shift_both_times() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1135,6 +1156,7 @@ async fn test_update_shift_invalid_end_before_start() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1200,6 +1222,7 @@ async fn test_update_shift_invalid_start_after_end() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1265,6 +1288,7 @@ async fn test_update_shift_invalid_datetime_format() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1311,6 +1335,7 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1385,6 +1410,7 @@ async fn test_export_csv_all_shifts() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1468,6 +1494,7 @@ async fn test_export_csv_with_date_range() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1598,6 +1625,7 @@ async fn test_export_csv_empty_database() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 
@@ -1637,6 +1665,7 @@ async fn test_export_csv_invalid_date_format() {
     let db = common::setup_test_db().await;
     let state = Arc::new(AppState {
         db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
     });
     let session_id = SessionId("test-session".to_string());
 

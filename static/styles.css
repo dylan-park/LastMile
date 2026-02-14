@@ -1087,6 +1087,86 @@ td[contenteditable="true"]:focus {
     }
 }
 
+/* ===== DEMO BANNER ===== */
+.demo-banner {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: var(--spacing-lg);
+    border-radius: 12px;
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    box-shadow: var(--shadow-md);
+    animation: slideDown 0.3s ease;
+    position: absolute;
+    z-index: 10;
+    right: var(--spacing-lg);
+}
+
+.demo-banner.dismissing {
+    animation: slideUp 0.3s ease forwards;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+.demo-banner .banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    flex: 1;
+}
+
+.demo-banner .banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.demo-banner .banner-text strong {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.demo-banner .banner-text span {
+    font-size: 14px;
+    opacity: 0.95;
+    line-height: 1.5;
+}
+
+.demo-banner .banner-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 6px;
+    padding: var(--spacing-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast);
+    flex-shrink: 0;
+    color: white;
+}
+
+.demo-banner .banner-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.demo-banner svg {
+    flex-shrink: 0;
+}
+
 /* ===== UTILITIES ===== */
 .hidden {
     display: none !important;
@@ -1197,6 +1277,16 @@ td[contenteditable="true"]:focus {
 
     .modal-footer button {
         width: 100%;
+    }
+
+    .demo-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--spacing-md);
+    }
+
+    .demo-banner .banner-close {
+        align-self: flex-end;
     }
 }
 

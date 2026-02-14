@@ -80,4 +80,5 @@ impl DemoDbProvider {
 
 pub struct AppState {
     pub db_provider: Arc<DbProvider>,
+    pub is_demo_mode: bool,
 }

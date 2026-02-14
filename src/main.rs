@@ -6,6 +6,7 @@ use std::{
 use axum::{
     Json, Router,
     body::Body,
+    extract::Extension,
     http::{
         Request, Response,
         header::{CACHE_CONTROL, HeaderValue},
@@ -152,6 +153,7 @@ async fn main() {
 
     let state = Arc::new(AppState {
         db_provider: Arc::new(db_provider),
+        is_demo_mode: is_demo,
     });
 
     let cors = CorsLayer::new()
@@ -218,7 +220,10 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn get_version() -> Json<serde_json::Value> {
+async fn get_version(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
     info!("Fetching application version");
-    Json(serde_json::json!({ "version": env!("CARGO_PKG_VERSION") }))
+    Json(serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "demo": state.is_demo_mode
+    }))
 }

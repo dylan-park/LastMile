@@ -205,8 +205,8 @@ Primarilly this is just for showcasing the different features of LastMile, so it
 
 ## Future Work
 
-- [ ] Create Demo Mode
-  - [ ] Implement Demo Mode
+- [x] Create Demo Mode
+  - [x] Implement Demo Mode
     - [x] Manually test Session > DB isolation
     - [x] Manually test Session > Session isolation
     - [x] Manually test session cleanup
@@ -214,7 +214,7 @@ Primarilly this is just for showcasing the different features of LastMile, so it
     - [x] Data persists between restarts
     - [x] Data persists when switching on and off demo mode
     - [x] Data integrety held during additions, deletions, edits
-  - [ ] Add Demo Mode popup
+  - [x] Add Demo Mode popup
   - [x] Confirm E2E tests still pass
     - [x] test_delete_shift
       - Shift seems to be deleted successfully, but still persists in UI until page refresh
