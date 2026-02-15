@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 async-trait = "0.1.86"
 axum = { version = "0.8.7", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["cookie", "cookie-private"] }
-chrono = { version = "0.4.42", features = ["serde"] }
+chrono = { version = "0.4.43", features = ["serde"] }
 dashmap = "6.1.0"
 futures = "0.3.31"
 http-body = "1.0.1"
