@@ -3,8 +3,7 @@ use crate::db::setup_database;
 use crate::models::{MaintenanceItem, MaintenanceItemRecord, Shift, ShiftRecord};
 
 use chrono::{Duration, Utc};
-use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::RngExt;
 use rust_decimal::Decimal;
 use rust_decimal::prelude::FromPrimitive;
 use surrealdb::{Surreal, engine::local::Db};
@@ -13,7 +12,7 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
     setup_database(db).await;
 
     // Generate Shifts
-    let mut rng = StdRng::from_entropy();
+    let mut rng = rand::rng();
     let mut current_odometer = 163000;
 
     // Generate dates (last 3 months)
@@ -23,10 +22,10 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
 
     while current_date <= end_date {
         // 5 random days per week logic approximated: 70% chance of shift per day
-        if rng.gen_bool(0.7) {
+        if rng.random_bool(0.7) {
             // Random start time (07:00 - 15:00)
-            let start_hour = rng.gen_range(7..15);
-            let start_minute = rng.gen_range(0..60);
+            let start_hour = rng.random_range(7..15);
+            let start_minute = rng.random_range(0..60);
             let start_time = current_date
                 .date_naive()
                 .and_hms_opt(start_hour, start_minute, 0)
@@ -35,21 +34,21 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
                 .unwrap();
 
             // Random duration (7.0 - 8.75 hours)
-            let hours_worked_float = rng.gen_range(7.0..8.75);
+            let hours_worked_float = rng.random_range(7.0..8.75);
             let hours_worked = Decimal::from_f64(hours_worked_float).unwrap().round_dp(2);
 
             let duration_seconds = (hours_worked_float * 3600.0) as i64;
             let end_time = start_time + Duration::seconds(duration_seconds);
 
             // Miles driven (80 - 160)
-            let miles_driven = rng.gen_range(80..161);
+            let miles_driven = rng.random_range(80..161);
             let odometer_start = current_odometer;
             let odometer_end = odometer_start + miles_driven;
 
             // Financials
-            let earnings_float = rng.gen_range(30.0..60.0);
-            let tips_float = rng.gen_range(35.0..85.0);
-            let gas_per_mile = rng.gen_range(0.08..0.15);
+            let earnings_float = rng.random_range(30.0..60.0);
+            let tips_float = rng.random_range(35.0..85.0);
+            let gas_per_mile = rng.random_range(0.08..0.15);
             let gas_cost_float = miles_driven as f64 * gas_per_mile;
 
             let earnings = Decimal::from_f64(earnings_float).unwrap().round_dp(2);
@@ -84,7 +83,7 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
     let current_mileage = current_odometer;
 
     // Oil Change (every 3000 miles)
-    let oil_last = current_mileage - rng.gen_range(100..2900);
+    let oil_last = current_mileage - rng.random_range(100..2900);
     let oil_interval = 3000;
     let _: Option<MaintenanceItem> = db
         .create("maintenance")
@@ -99,7 +98,7 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
         .await?;
 
     // Tire Rotation (every 5000 miles)
-    let tire_last = current_mileage - rng.gen_range(100..4900);
+    let tire_last = current_mileage - rng.random_range(100..4900);
     let tire_interval = 5000;
     let _: Option<MaintenanceItem> = db
         .create("maintenance")
@@ -118,7 +117,7 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
         .await?;
 
     // Brake Inspection (every 10000 miles)
-    let brake_last = current_mileage - rng.gen_range(100..9900);
+    let brake_last = current_mileage - rng.random_range(100..9900);
     let brake_interval = 10000;
     let _: Option<MaintenanceItem> = db
         .create("maintenance")
