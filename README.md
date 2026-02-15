@@ -191,37 +191,20 @@ cargo run --release -- --e2e
 
 ## Demo Mode
 
-An optional demo mode can be run with:
+You can run the application in demo mode with:
 ```bash
 cargo run --release -- --demo
 ```
-This modifies the program in these ways:
-- In-memory database instead of on disk
-- Instanced sessions per browser session
-- Randomly generated data
-- Sessions left idle for more than 1 hour are cleared every hour
+When enabled, demo mode changes the application behavior in the following ways:
+- Uses an in-memory database instead of disk storage
+- Creates isolated sessions per browser session
+- Generates random sample data
+- Automatically clears sessions that have been idle for more than 1 hour (checked hourly)
 
-Primarilly this is just for showcasing the different features of LastMile, so it could be used before committing to the program in order to try things out. All featues present in the main version are presesnt here aside from persistant data. 
+Demo mode is intended for showcasing the features of LastMile before committing to a full setup. All functionality is available except for persistent data storage.
 
 ## Future Work
 
-- [x] Create Demo Mode
-  - [x] Implement Demo Mode
-    - [x] Manually test Session > DB isolation
-    - [x] Manually test Session > Session isolation
-    - [x] Manually test session cleanup
-  - [x] Confirm base application works as expected
-    - [x] Data persists between restarts
-    - [x] Data persists when switching on and off demo mode
-    - [x] Data integrety held during additions, deletions, edits
-  - [x] Add Demo Mode popup
-  - [x] Confirm E2E tests still pass
-    - [x] test_delete_shift
-      - Shift seems to be deleted successfully, but still persists in UI until page refresh
-      - Issue was also present with deleting maintenance items
-      - Issue was a change in the return type of the DELETE endpoints
-  - [x] Confirm unit tests still pass
-    - [x] Rewrite unit tests to fit new appstate layout
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
     - [ ] Improve table view
