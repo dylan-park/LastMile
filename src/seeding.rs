@@ -1,6 +1,7 @@
 use crate::calculations::calculate_remaining_mileage;
 use crate::db::setup_database;
 use crate::models::{MaintenanceItem, MaintenanceItemRecord, Shift, ShiftRecord};
+
 use chrono::{Duration, Utc};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};

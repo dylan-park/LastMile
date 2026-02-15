@@ -1,5 +1,6 @@
-use axum::{Json, Extension};
 use crate::middleware::SessionId;
+
+use axum::{Extension, Json};
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::info;
@@ -19,7 +20,10 @@ pub async fn teardown_all_data(
     Extension(state): Extension<Arc<AppState>>,
     Extension(session_id): Extension<SessionId>,
 ) -> Result<Json<TeardownResponse>> {
-    info!("TEARDOWN: Clearing all database data for session {}", session_id.0);
+    info!(
+        "TEARDOWN: Clearing all database data for session {}",
+        session_id.0
+    );
     let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
     // Delete all shifts

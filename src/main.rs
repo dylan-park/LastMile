@@ -1,3 +1,18 @@
+use crate::{
+    handlers::{
+        maintenance::{
+            calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
+            get_all_maintenance_items, update_maintenance_item,
+        },
+        shifts::{
+            delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
+            get_shifts_by_range, start_shift, update_shift,
+        },
+        test::teardown_all_data,
+    },
+    state::AppState,
+};
+
 use std::{
     sync::Arc,
     task::{Context, Poll},
@@ -27,21 +42,6 @@ use tower_http::{
     services::ServeDir,
 };
 use tracing::info;
-
-use crate::{
-    handlers::{
-        maintenance::{
-            calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
-            get_all_maintenance_items, update_maintenance_item,
-        },
-        shifts::{
-            delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
-            get_shifts_by_range, start_shift, update_shift,
-        },
-        test::teardown_all_data,
-    },
-    state::AppState,
-};
 
 // Custom Cache layer
 #[derive(Clone)]
