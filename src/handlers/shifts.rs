@@ -1,10 +1,11 @@
+use crate::middleware::SessionId;
+
 use axum::{
     Json,
-    extract::{Path, Query, Extension},
+    extract::{Extension, Path, Query},
     http::StatusCode,
     response::IntoResponse,
 };
-use crate::middleware::SessionId;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -24,7 +25,6 @@ use crate::{
     state::AppState,
     validation,
 };
-
 
 pub async fn get_all_shifts(
     Extension(state): Extension<Arc<AppState>>,
@@ -193,10 +193,7 @@ pub async fn end_shift(
     };
 
     // Update the shift - returns Option<T> when using record ID
-    let updated_shift: Option<Shift> = db
-        .update(("shifts", id.as_str()))
-        .merge(update)
-        .await?;
+    let updated_shift: Option<Shift> = db.update(("shifts", id.as_str())).merge(update).await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -310,10 +307,7 @@ pub async fn update_shift(
     };
 
     // Update the shift - returns Option<T> when using record ID
-    let updated_shift: Option<Shift> = db
-        .update(("shifts", id.as_str()))
-        .merge(update)
-        .await?;
+    let updated_shift: Option<Shift> = db.update(("shifts", id.as_str())).merge(update).await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
