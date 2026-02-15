@@ -1,6 +1,6 @@
 [package]
 name = "lastmile"
-version = "0.7.3"
+version = "0.8.1"
 edition = "2024"
 rust-version = "1.88.0"
 license = "MIT OR Apache-2.0"
