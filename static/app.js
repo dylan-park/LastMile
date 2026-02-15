@@ -8,6 +8,7 @@ const state = {
   statsPeriod: "month", // "month", "all", or "custom"
   customDateRange: { start: null, end: null },
   currentView: "shifts", // "shifts" or "maintenance"
+  isDemo: false,
 };
 
 async function loadVersion() {
@@ -16,6 +17,12 @@ async function loadVersion() {
     const versionEl = document.getElementById("appVersion");
     if (versionEl) {
       versionEl.textContent = result.version;
+    }
+
+    // Check if demo mode
+    state.isDemo = result.demo || false;
+    if (state.isDemo) {
+      UI.showDemoBanner();
     }
   } catch (error) {
     console.error("Error loading version:", error);

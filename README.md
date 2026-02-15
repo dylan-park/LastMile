@@ -189,6 +189,20 @@ Note: E2E tests require the backend to be running with the `--e2e` flag to enabl
 cargo run --release -- --e2e
 ```
 
+## Demo Mode
+
+You can run the application in demo mode with:
+```bash
+cargo run --release -- --demo
+```
+When enabled, demo mode changes the application behavior in the following ways:
+- Uses an in-memory database instead of disk storage
+- Creates isolated sessions per browser session
+- Generates random sample data
+- Automatically clears sessions that have been idle for more than 1 hour (checked hourly)
+
+Demo mode is intended for showcasing the features of LastMile before committing to a full setup. All functionality is available except for persistent data storage.
+
 ## Future Work
 
 - [ ] Improve CSS styling rules

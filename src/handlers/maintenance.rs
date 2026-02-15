@@ -1,6 +1,8 @@
+use crate::middleware::SessionId;
+
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Extension, Path},
 };
 use std::sync::Arc;
 use tracing::info;
@@ -18,25 +20,29 @@ use crate::{
 };
 
 pub async fn get_all_maintenance_items(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session): Extension<SessionId>,
 ) -> Result<Json<Vec<MaintenanceItem>>> {
-    info!("Fetching all maintenance items");
+    info!("Fetching all maintenance items for session {}", session.0);
+    let db = state.db_provider.get_db(Some(&session.0)).await?;
 
-    let maintenance_items = query_maitenance_items(&state.db, "SELECT * FROM maintenance").await?;
+    let maintenance_items = query_maitenance_items(&db, "SELECT * FROM maintenance").await?;
 
     info!("Retrieved {} maintenance items", maintenance_items.len());
     Ok(Json(maintenance_items))
 }
 
 pub async fn create_maintenance_item(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session): Extension<SessionId>,
     Json(payload): Json<CreateMaintenanceItemRequest>,
 ) -> Result<Json<MaintenanceItem>> {
     info!("Creating new maintenance item: {}", payload.name);
+    let db = state.db_provider.get_db(Some(&session.0)).await?;
 
     // Get latest odometer reading to calculate remaining mileage
     let latest_mileage: i32 = query_shifts(
-        &state.db,
+        &db,
         "SELECT * FROM shifts WHERE odometer_end != NONE ORDER BY start_time DESC LIMIT 1;",
     )
     .await?
@@ -62,7 +68,7 @@ pub async fn create_maintenance_item(
 
     // Create returns Option<T>
     let maintenance_item: Option<MaintenanceItem> =
-        state.db.create("maintenance").content(record).await?;
+        db.create("maintenance").content(record).await?;
     let maintenance_item = maintenance_item.ok_or_else(|| {
         AppError::Database(Box::new(surrealdb::Error::Api(
             surrealdb::error::Api::Query("Failed to create maintenance item".to_string()),
@@ -77,13 +83,15 @@ pub async fn create_maintenance_item(
 }
 
 pub async fn update_maintenance_item(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<String>,
+    Extension(session): Extension<SessionId>,
     Json(payload): Json<UpdateMaintenanceItemRequest>,
 ) -> Result<Json<MaintenanceItem>> {
     info!("Updating maintenance item: id={}", id);
+    let db = state.db_provider.get_db(Some(&session.0)).await?;
 
-    let maintenance_item = get_maitenance_item_by_id(&state.db, &id).await?;
+    let maintenance_item = get_maitenance_item_by_id(&db, &id).await?;
 
     // Merge updates with existing values
     let name = payload.name.unwrap_or(maintenance_item.name);
@@ -104,7 +112,7 @@ pub async fn update_maintenance_item(
 
     // Get latest odometer reading to recalculate remaining mileage
     let latest_mileage: i32 = query_shifts(
-        &state.db,
+        &db,
         "SELECT * FROM shifts WHERE odometer_end != NONE ORDER BY start_time DESC LIMIT 1;",
     )
     .await?
@@ -126,8 +134,7 @@ pub async fn update_maintenance_item(
     };
 
     // Update the maintenance item - returns Option<T> when using record ID
-    let updated_maintenance_item: Option<MaintenanceItem> = state
-        .db
+    let updated_maintenance_item: Option<MaintenanceItem> = db
         .update(("maintenance", id.as_str()))
         .merge(update)
         .await?;
@@ -140,14 +147,16 @@ pub async fn update_maintenance_item(
 }
 
 pub async fn delete_maintenance_item(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<String>,
+    Extension(session): Extension<SessionId>,
 ) -> Result<Json<MaintenanceItem>> {
     info!("Deleting maintenance item: id={}", id);
+    let db = state.db_provider.get_db(Some(&session.0)).await?;
 
     // Delete the maintenance item - returns Option<T> when using record ID
     let deleted_maintenance_item: Option<MaintenanceItem> =
-        state.db.delete(("maintenance", id.as_str())).await?;
+        db.delete(("maintenance", id.as_str())).await?;
 
     let deleted_maintenance_item =
         deleted_maintenance_item.ok_or(AppError::MaintenanceItemNotFound)?;
@@ -157,12 +166,14 @@ pub async fn delete_maintenance_item(
 }
 
 pub async fn calculate_required_maintenance(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session): Extension<SessionId>,
 ) -> Result<Json<RequiredMaintenanceResponse>> {
     info!("Calculating required maintenance items");
+    let db = state.db_provider.get_db(Some(&session.0)).await?;
 
     let latest_mileage: Option<i32> = query_shifts(
-        &state.db,
+        &db,
         "SELECT * FROM shifts WHERE odometer_end != NONE ORDER BY start_time DESC LIMIT 1;",
     )
     .await?
@@ -179,8 +190,7 @@ pub async fn calculate_required_maintenance(
     };
 
     let maintenance_items =
-        query_maitenance_items(&state.db, "SELECT * FROM maintenance WHERE enabled = true;")
-            .await?;
+        query_maitenance_items(&db, "SELECT * FROM maintenance WHERE enabled = true;").await?;
 
     let required_maintenance_items: Vec<_> = maintenance_items
         .into_iter()

@@ -288,6 +288,47 @@ const UI = {
     }
   },
 
+  // ===== DEMO BANNER =====
+  showDemoBanner() {
+    // Check if already exists to avoid duplicates
+    if (document.getElementById("demoBanner")) return;
+
+    const banner = document.createElement("div");
+    banner.id = "demoBanner";
+    banner.className = "demo-banner";
+    banner.innerHTML = `
+      <div class="banner-content">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5">
+        <path d="M12,14a1.25,1.25,0,1,0,1.25,1.25A1.25,1.25,0,0,0,12,14Zm0-1.5a1,1,0,0,0,1-1v-3a1,1,0,0,0-2,0v3A1,1,0,0,0,12,12.5ZM12,2A10,10,0,1,0,22,12,10.01114,10.01114,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8.00917,8.00917,0,0,1,12,20Z"/>
+        </svg>
+        <div class="banner-text">
+          <strong>This is a demo environment.</strong>
+          <span>Changes won’t be saved and reset each session.</span>
+        </div>
+      </div>
+      <button class="banner-close" onclick="UI.hideDemoBanner()" aria-label="Dismiss demo notice">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    `;
+
+    // Insert as first child of container (after header but inside .container)
+    const container = document.querySelector(".container");
+    const viewToggle = document.querySelector(".view-toggle-container");
+    const header = document.querySelector(".header");
+    document.body.insertAdjacentElement("afterbegin", banner);
+  },
+
+  hideDemoBanner() {
+    const banner = document.getElementById("demoBanner");
+    if (banner) {
+      banner.classList.add("dismissing");
+      setTimeout(() => banner.remove(), 300);
+    }
+  },
+
   // ===== PRIVATE HELPERS =====
   _getEmptyState(colspan, title, subtitle, iconType = "calendar") {
     const icons = {

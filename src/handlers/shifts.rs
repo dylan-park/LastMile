@@ -1,6 +1,8 @@
+use crate::middleware::SessionId;
+
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Extension, Path, Query},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -24,19 +26,25 @@ use crate::{
     validation,
 };
 
-pub async fn get_all_shifts(State(state): State<Arc<AppState>>) -> Result<Json<Vec<Shift>>> {
-    info!("Fetching all shifts");
+pub async fn get_all_shifts(
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
+) -> Result<Json<Vec<Shift>>> {
+    info!("Fetching all shifts for session {}", session_id.0);
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
-    let shifts = query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time DESC").await?;
+    let shifts = query_shifts(&db, "SELECT * FROM shifts ORDER BY start_time DESC").await?;
 
     info!("Retrieved {} shifts", shifts.len());
     Ok(Json(shifts))
 }
 
 pub async fn get_shifts_by_range(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
     Query(params): Query<DateRangeQuery>,
 ) -> Result<Json<Vec<Shift>>> {
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
     info!(
         "Fetching shifts in range: {} to {}",
         params.start, params.end
@@ -63,17 +71,21 @@ pub async fn get_shifts_by_range(
 
     // Query shifts within the date range
     let query = "SELECT * FROM shifts WHERE start_time >= $start AND start_time <= $end ORDER BY start_time DESC";
-    let shifts = query_shifts_with_date_range(&state.db, query, start_surreal, end_surreal).await?;
+    let shifts = query_shifts_with_date_range(&db, query, start_surreal, end_surreal).await?;
 
     info!("Retrieved {} shifts in range", shifts.len());
     Ok(Json(shifts))
 }
 
-pub async fn get_active_shift(State(state): State<Arc<AppState>>) -> Result<Json<Option<Shift>>> {
+pub async fn get_active_shift(
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
+) -> Result<Json<Option<Shift>>> {
     info!("Checking for active shift");
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
     let shifts = query_shifts(
-        &state.db,
+        &db,
         "SELECT * FROM shifts WHERE end_time = NONE ORDER BY start_time DESC LIMIT 1",
     )
     .await?;
@@ -89,16 +101,19 @@ pub async fn get_active_shift(State(state): State<Arc<AppState>>) -> Result<Json
 }
 
 pub async fn start_shift(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
     Json(payload): Json<StartShiftRequest>,
 ) -> Result<Json<Shift>> {
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
+
     info!(
         "Starting new shift with odometer: {}",
         payload.odometer_start
     );
 
     // Check for active shift
-    if has_active_shift(&state.db).await? {
+    if has_active_shift(&db).await? {
         warn!("Attempted to start shift while one is already active");
         return Err(AppError::ActiveShiftExists);
     }
@@ -121,7 +136,7 @@ pub async fn start_shift(
     };
 
     // Create returns Option<T>
-    let shift: Option<Shift> = state.db.create("shifts").content(record).await?;
+    let shift: Option<Shift> = db.create("shifts").content(record).await?;
     let shift = shift.ok_or_else(|| {
         AppError::Database(Box::new(surrealdb::Error::Api(
             surrealdb::error::Api::Query("Failed to create shift".to_string()),
@@ -133,13 +148,15 @@ pub async fn start_shift(
 }
 
 pub async fn end_shift(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<String>,
+    Extension(session_id): Extension<SessionId>,
     Json(payload): Json<EndShiftRequest>,
 ) -> Result<Json<Shift>> {
     info!("Ending shift: id={}", id);
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
-    let shift = get_shift_by_id(&state.db, &id).await?;
+    let shift = get_shift_by_id(&db, &id).await?;
 
     // Validate inputs
     validation::validate_odometer(shift.odometer_start, payload.odometer_end)?;
@@ -176,16 +193,12 @@ pub async fn end_shift(
     };
 
     // Update the shift - returns Option<T> when using record ID
-    let updated_shift: Option<Shift> = state
-        .db
-        .update(("shifts", id.as_str()))
-        .merge(update)
-        .await?;
+    let updated_shift: Option<Shift> = db.update(("shifts", id.as_str())).merge(update).await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
     // Update all maintenance items with new remaining mileage
-    update_all_maintenance_remaining_mileage(&state.db, payload.odometer_end).await?;
+    update_all_maintenance_remaining_mileage(&db, payload.odometer_end).await?;
 
     info!(
         "Shift ended successfully: id={}, hours={}, miles={}",
@@ -195,13 +208,15 @@ pub async fn end_shift(
 }
 
 pub async fn update_shift(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<String>,
+    Extension(session_id): Extension<SessionId>,
     Json(payload): Json<UpdateShiftRequest>,
 ) -> Result<Json<Shift>> {
     info!("Updating shift: id={}", id);
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
-    let shift = get_shift_by_id(&state.db, &id).await?;
+    let shift = get_shift_by_id(&db, &id).await?;
 
     // Parse datetime strings if provided
     let new_start_time: Option<DateTime<Utc>> = if let Some(ref start_str) = payload.start_time {
@@ -292,11 +307,7 @@ pub async fn update_shift(
     };
 
     // Update the shift - returns Option<T> when using record ID
-    let updated_shift: Option<Shift> = state
-        .db
-        .update(("shifts", id.as_str()))
-        .merge(update)
-        .await?;
+    let updated_shift: Option<Shift> = db.update(("shifts", id.as_str())).merge(update).await?;
 
     let updated_shift = updated_shift.ok_or(AppError::ShiftNotFound)?;
 
@@ -304,7 +315,7 @@ pub async fn update_shift(
     if let Some(new_odometer_end) = odometer_end
         && shift.odometer_end != Some(new_odometer_end)
     {
-        update_all_maintenance_remaining_mileage(&state.db, new_odometer_end).await?;
+        update_all_maintenance_remaining_mileage(&db, new_odometer_end).await?;
     }
 
     info!("Shift updated successfully: id={}", id);
@@ -312,25 +323,29 @@ pub async fn update_shift(
 }
 
 pub async fn delete_shift(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Result<Json<Shift>> {
+    Extension(session_id): Extension<SessionId>,
+) -> Result<StatusCode> {
     info!("Deleting shift: id={}", id);
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
     // Delete the shift - returns Option<T> when using record ID
-    let deleted_shift: Option<Shift> = state.db.delete(("shifts", id.as_str())).await?;
+    let deleted_shift: Option<Shift> = db.delete(("shifts", id.as_str())).await?;
 
-    let deleted_shift = deleted_shift.ok_or(AppError::ShiftNotFound)?;
+    let _deleted_shift = deleted_shift.ok_or(AppError::ShiftNotFound)?;
 
     info!("Shift deleted successfully: id={}", id);
-    Ok(Json(deleted_shift))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn export_csv(
-    State(state): State<Arc<AppState>>,
+    Extension(state): Extension<Arc<AppState>>,
+    Extension(session_id): Extension<SessionId>,
     Query(params): Query<OptionalDateRangeQuery>,
 ) -> Result<impl IntoResponse> {
     info!("Exporting shifts to CSV");
+    let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
     // Fetch shifts based on whether date range is provided
     let shifts = if let (Some(start_str), Some(end_str)) = (params.start, params.end) {
@@ -353,10 +368,10 @@ pub async fn export_csv(
 
         // Query shifts within the date range
         let query = "SELECT * FROM shifts WHERE start_time >= $start AND start_time <= $end ORDER BY start_time ASC";
-        query_shifts_with_date_range(&state.db, query, start_surreal, end_surreal).await?
+        query_shifts_with_date_range(&db, query, start_surreal, end_surreal).await?
     } else {
         info!("Exporting all shifts");
-        query_shifts(&state.db, "SELECT * FROM shifts ORDER BY start_time ASC").await?
+        query_shifts(&db, "SELECT * FROM shifts ORDER BY start_time ASC").await?
     };
 
     let mut csv = String::from(

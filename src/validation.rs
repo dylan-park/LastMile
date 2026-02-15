@@ -1,6 +1,6 @@
-use rust_decimal::Decimal;
-
 use crate::error::{AppError, Result};
+
+use rust_decimal::Decimal;
 
 pub fn validate_odometer(start: i32, end: i32) -> Result<()> {
     if end < start {

@@ -1,3 +1,18 @@
+use crate::{
+    handlers::{
+        maintenance::{
+            calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
+            get_all_maintenance_items, update_maintenance_item,
+        },
+        shifts::{
+            delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
+            get_shifts_by_range, start_shift, update_shift,
+        },
+        test::teardown_all_data,
+    },
+    state::AppState,
+};
+
 use std::{
     sync::Arc,
     task::{Context, Poll},
@@ -6,6 +21,7 @@ use std::{
 use axum::{
     Json, Router,
     body::Body,
+    extract::Extension,
     http::{
         Request, Response,
         header::{CACHE_CONTROL, HeaderValue},
@@ -26,21 +42,6 @@ use tower_http::{
     services::ServeDir,
 };
 use tracing::info;
-
-use crate::{
-    handlers::{
-        maintenance::{
-            calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
-            get_all_maintenance_items, update_maintenance_item,
-        },
-        shifts::{
-            delete_shift, end_shift, export_csv, get_active_shift, get_all_shifts,
-            get_shifts_by_range, start_shift, update_shift,
-        },
-        test::teardown_all_data,
-    },
-    state::AppState,
-};
 
 // Custom Cache layer
 #[derive(Clone)]
@@ -105,33 +106,55 @@ async fn main() {
         .with_level(true)
         .init();
 
-    // Get configuration from environment or use defaults
+    // Parse command line arguments
+    let args: Vec<String> = std::env::args().collect();
+    let is_demo = args.contains(&"--demo".to_string());
+    let is_e2e = args.contains(&"--e2e".to_string());
+
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "./data".to_string());
-    let port: u16 = std::env::var("PORT")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(3000);
 
-    info!("Initializing SurrealDB at {}", db_path);
+    // Initialize Database Provider
+    let db_provider = if is_demo {
+        info!("DEMO MODE ENABLED: In-memory isolated sessions");
+        let provider = state::DemoDbProvider::new();
 
-    // Create the data directory if it doesn't exist
-    std::fs::create_dir_all(&db_path).expect("Failed to create data directory");
+        // Spawn cleanup task
+        let provider_clone = provider.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(3600)).await; // 1 hour
+                provider_clone.cleanup_old_sessions();
+            }
+        });
 
-    // Initialize SurrealDB with RocksDB backend
-    let db: Surreal<Db> = Surreal::new::<RocksDb>(db_path.clone())
-        .await
-        .expect("Failed to initialize SurrealDB");
+        state::DbProvider::Demo(provider)
+    } else {
+        info!("Initializing SurrealDB at {}", db_path);
+        // Create the data directory if it doesn't exist
+        std::fs::create_dir_all(&db_path).expect("Failed to create data directory");
 
-    // Use namespace and database
-    db.use_ns("lastmile")
-        .use_db("main")
-        .await
-        .expect("Failed to use namespace and database");
+        // Initialize SurrealDB with RocksDB backend
+        let db: Surreal<Db> = Surreal::new::<RocksDb>(db_path.clone())
+            .await
+            .expect("Failed to initialize SurrealDB");
 
-    info!("Setting up database schema...");
-    db::setup_database(&db).await;
+        // Use namespace and database
+        db.use_ns("lastmile")
+            .use_db("main")
+            .await
+            .expect("Failed to use namespace and database");
 
-    let state = Arc::new(AppState { db });
+        info!("Setting up database schema...");
+        db::setup_database(&db).await;
+
+        state::DbProvider::Single(state::SingleDbProvider { db })
+    };
+
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(db_provider),
+        is_demo_mode: is_demo,
+    });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -164,34 +187,43 @@ async fn main() {
         );
 
     // Conditionally enable test routes
-    let args: Vec<String> = std::env::args().collect();
-    if args.contains(&"--e2e".to_string()) {
+    if is_e2e {
         info!("⚠️  TEST MODE ENABLED: /api/test/teardown is accessible ⚠️");
         app = app.route("/api/test/teardown", post(teardown_all_data));
     }
 
+    // Add session middleware globally (required for handlers to access SessionId)
+    app = app.layer(axum::middleware::from_fn(
+        lastmile::middleware::session_middleware,
+    ));
+
     let app = app
-        .with_state(state)
+        .layer(axum::Extension(state))
         .layer(cors)
         // Serve static files from ./static directory as fallback
         .fallback_service(static_files)
         .layer(CompressionLayer::new());
 
-    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port))
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
         .expect("Failed to bind port");
 
     info!("Server running on http://0.0.0.0:{}", port);
-    info!("Database location: {}", db_path);
-    info!("Note: For database management, use SurrealDB CLI:");
-    info!(
-        "  surreal sql --endpoint file://{} --namespace lastmile --database main",
-        db_path
-    );
+    if !is_demo {
+        info!("Database location: {}", db_path);
+        info!("Note: For database management, use SurrealDB CLI:");
+        info!(
+            "  surreal sql --endpoint file://{} --namespace lastmile --database main",
+            db_path
+        );
+    }
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn get_version() -> Json<serde_json::Value> {
+async fn get_version(Extension(state): Extension<Arc<AppState>>) -> Json<serde_json::Value> {
     info!("Fetching application version");
-    Json(serde_json::json!({ "version": env!("CARGO_PKG_VERSION") }))
+    Json(serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "demo": state.is_demo_mode
+    }))
 }

@@ -1,26 +1,31 @@
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Extension, Path, Query};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 
 use lastmile::db::helpers::get_maitenance_item_by_id;
 use lastmile::handlers::maintenance::*;
 use lastmile::handlers::shifts::*;
+use lastmile::middleware::SessionId;
 use lastmile::models::*;
-use lastmile::state::AppState;
+use lastmile::state::{AppState, DbProvider, SingleDbProvider};
 
 mod common;
 
 #[tokio::test]
 async fn test_start_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let request = StartShiftRequest {
         odometer_start: 12345,
     };
 
-    let result = start_shift(State(state), Json(request)).await;
+    let result = start_shift(Extension(state), Extension(session_id), Json(request)).await;
     assert!(result.is_ok());
 
     let shift = result.unwrap().0;
@@ -35,19 +40,27 @@ async fn test_start_shift() {
 #[tokio::test]
 async fn test_start_shift_when_active_exists() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let request1 = StartShiftRequest {
         odometer_start: 12345,
     };
-    let _ = start_shift(State(state.clone()), Json(request1))
-        .await
-        .unwrap();
+    let _ = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(request1),
+    )
+    .await
+    .unwrap();
 
     let request2 = StartShiftRequest {
         odometer_start: 12400,
     };
-    let result = start_shift(State(state), Json(request2)).await;
+    let result = start_shift(Extension(state), Extension(session_id), Json(request2)).await;
 
     assert!(result.is_err());
     assert!(matches!(
@@ -59,15 +72,23 @@ async fn test_start_shift_when_active_exists() {
 #[tokio::test]
 async fn test_end_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let start_request = StartShiftRequest {
         odometer_start: 12345,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     // Sleep for 20 second to ensure measurable time difference
@@ -82,8 +103,9 @@ async fn test_end_shift() {
     };
 
     let result = end_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(end_request),
     )
     .await;
@@ -106,15 +128,23 @@ async fn test_end_shift() {
 #[tokio::test]
 async fn test_end_shift_invalid_odometer() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let start_request = StartShiftRequest {
         odometer_start: 12445,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -126,8 +156,9 @@ async fn test_end_shift_invalid_odometer() {
     };
 
     let result = end_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(end_request),
     )
     .await;
@@ -141,19 +172,31 @@ async fn test_end_shift_invalid_odometer() {
 #[tokio::test]
 async fn test_get_active_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
-    let result = get_active_shift(State(state.clone())).await.unwrap();
+    let result = get_active_shift(Extension(state.clone()), Extension(session_id.clone()))
+        .await
+        .unwrap();
     assert!(result.0.is_none());
 
     let start_request = StartShiftRequest {
         odometer_start: 12345,
     };
-    let _ = start_shift(State(state.clone()), Json(start_request))
+    let _ = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap();
+
+    let result = get_active_shift(Extension(state), Extension(session_id))
         .await
         .unwrap();
-
-    let result = get_active_shift(State(state)).await.unwrap();
     assert!(result.0.is_some());
     let active = result.0.unwrap();
     assert_eq!(active.odometer_start, 12345);
@@ -162,15 +205,23 @@ async fn test_get_active_shift() {
 #[tokio::test]
 async fn test_update_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let start_request = StartShiftRequest {
         odometer_start: 12345,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let update_request = UpdateShiftRequest {
@@ -185,8 +236,9 @@ async fn test_update_shift() {
     };
 
     let result = update_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -207,15 +259,23 @@ async fn test_update_shift() {
 #[tokio::test]
 async fn test_delete_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let start_request = StartShiftRequest {
         odometer_start: 12445,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -227,41 +287,60 @@ async fn test_delete_shift() {
     };
 
     let result = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
     assert!(result.is_ok());
 
-    let result = delete_shift(State(state.clone()), axum::extract::Path(shift_id)).await;
+    let result = delete_shift(
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
+    )
+    .await;
     assert!(result.is_ok());
 
-    let all_items = get_all_shifts(State(state)).await.unwrap();
+    let all_items = get_all_shifts(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(all_items.0.len(), 0);
 }
 
 #[tokio::test]
 async fn test_get_all_shifts() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let _ = start_shift(
-        State(state.clone()),
+        Extension(state.clone()),
+        Extension(session_id.clone()),
         Json(StartShiftRequest {
             odometer_start: 1000,
         }),
     )
     .await;
 
-    let result = get_all_shifts(State(state)).await.unwrap();
+    let result = get_all_shifts(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(result.0.len(), 1);
 }
 
 #[tokio::test]
 async fn test_create_maintenance_item() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -271,7 +350,8 @@ async fn test_create_maintenance_item() {
         notes: Some("Full synthetic".to_string()),
     };
 
-    let result = create_maintenance_item(State(state), Json(request)).await;
+    let result =
+        create_maintenance_item(Extension(state), Extension(session_id), Json(request)).await;
     assert!(result.is_ok());
 
     let item = result.unwrap().0;
@@ -287,7 +367,11 @@ async fn test_create_maintenance_item() {
 #[tokio::test]
 async fn test_update_maintenance_item() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let create_request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -296,10 +380,14 @@ async fn test_update_maintenance_item() {
         enabled: true,
         notes: None,
     };
-    let item = create_maintenance_item(State(state.clone()), Json(create_request))
-        .await
-        .unwrap()
-        .0;
+    let item = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let item_id = item.id.id.to_string();
 
     let update_request = UpdateMaintenanceItemRequest {
@@ -311,8 +399,9 @@ async fn test_update_maintenance_item() {
     };
 
     let result = update_maintenance_item(
-        State(state),
-        axum::extract::Path(item_id),
+        Extension(state),
+        Path(item_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -329,7 +418,11 @@ async fn test_update_maintenance_item() {
 #[tokio::test]
 async fn test_delete_maintenance_item() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let create_request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -338,24 +431,38 @@ async fn test_delete_maintenance_item() {
         enabled: true,
         notes: None,
     };
-    let item = create_maintenance_item(State(state.clone()), Json(create_request))
-        .await
-        .unwrap()
-        .0;
+    let item = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let item_id = item.id.id.to_string();
 
-    let result =
-        delete_maintenance_item(State(state.clone()), axum::extract::Path(item_id.clone())).await;
+    let result = delete_maintenance_item(
+        Extension(state.clone()),
+        Path(item_id.clone()),
+        Extension(session_id.clone()),
+    )
+    .await;
     assert!(result.is_ok());
 
-    let all_items = get_all_maintenance_items(State(state)).await.unwrap();
+    let all_items = get_all_maintenance_items(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(all_items.0.len(), 0);
 }
 
 #[tokio::test]
 async fn test_calculate_required_maintenance_none_required() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let create_request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -364,15 +471,24 @@ async fn test_calculate_required_maintenance_none_required() {
         enabled: true,
         notes: None,
     };
-    let _ = create_maintenance_item(State(state.clone()), Json(create_request)).await;
+    let _ = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await;
 
     let start_request = StartShiftRequest {
         odometer_start: 12000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -383,20 +499,27 @@ async fn test_calculate_required_maintenance_none_required() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
 
-    let result = calculate_required_maintenance(State(state)).await.unwrap();
+    let result = calculate_required_maintenance(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(result.0.required_maintenance_items.len(), 0);
 }
 
 #[tokio::test]
 async fn test_calculate_required_maintenance_required() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let create_request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -405,15 +528,24 @@ async fn test_calculate_required_maintenance_required() {
         enabled: true,
         notes: None,
     };
-    let _ = create_maintenance_item(State(state.clone()), Json(create_request)).await;
+    let _ = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await;
 
     let start_request = StartShiftRequest {
         odometer_start: 12000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -424,13 +556,16 @@ async fn test_calculate_required_maintenance_required() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
 
-    let result = calculate_required_maintenance(State(state)).await.unwrap();
+    let result = calculate_required_maintenance(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(result.0.required_maintenance_items.len(), 1);
     assert_eq!(result.0.required_maintenance_items[0].name, "Oil Change");
 }
@@ -438,7 +573,11 @@ async fn test_calculate_required_maintenance_required() {
 #[tokio::test]
 async fn test_calculate_required_maintenance_disabled_item() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let create_request = CreateMaintenanceItemRequest {
         name: "Oil Change".to_string(),
@@ -447,15 +586,24 @@ async fn test_calculate_required_maintenance_disabled_item() {
         enabled: false,
         notes: None,
     };
-    let _ = create_maintenance_item(State(state.clone()), Json(create_request)).await;
+    let _ = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await;
 
     let start_request = StartShiftRequest {
         odometer_start: 12000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -466,29 +614,40 @@ async fn test_calculate_required_maintenance_disabled_item() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
 
-    let result = calculate_required_maintenance(State(state)).await.unwrap();
+    let result = calculate_required_maintenance(Extension(state), Extension(session_id))
+        .await
+        .unwrap();
     assert_eq!(result.0.required_maintenance_items.len(), 0);
 }
 
 #[tokio::test]
 async fn test_create_maintenance_item_with_existing_shift() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create a shift with odometer reading
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -499,8 +658,9 @@ async fn test_create_maintenance_item_with_existing_shift() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
@@ -516,7 +676,8 @@ async fn test_create_maintenance_item_with_existing_shift() {
         notes: None,
     };
 
-    let result = create_maintenance_item(State(state), Json(request)).await;
+    let result =
+        create_maintenance_item(Extension(state), Extension(session_id), Json(request)).await;
     assert!(result.is_ok());
 
     let item = result.unwrap().0;
@@ -526,16 +687,24 @@ async fn test_create_maintenance_item_with_existing_shift() {
 #[tokio::test]
 async fn test_update_maintenance_item_recalculates_remaining_mileage() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -546,8 +715,9 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
@@ -560,10 +730,14 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
         enabled: true,
         notes: None,
     };
-    let item = create_maintenance_item(State(state.clone()), Json(create_request))
-        .await
-        .unwrap()
-        .0;
+    let item = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let item_id = item.id.id.to_string();
 
     // Initial: interval 5000, last service 8000, current 11000
@@ -581,8 +755,9 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
     };
 
     let result = update_maintenance_item(
-        State(state),
-        axum::extract::Path(item_id),
+        Extension(state),
+        Path(item_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -595,7 +770,12 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
 #[tokio::test]
 async fn test_end_shift_updates_maintenance_remaining_mileage() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let db_provider = Arc::new(DbProvider::Single(SingleDbProvider { db: db.clone() }));
+    let state = Arc::new(AppState {
+        db_provider: db_provider.clone(),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create maintenance item first
     let create_request = CreateMaintenanceItemRequest {
@@ -605,10 +785,14 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
         enabled: true,
         notes: None,
     };
-    let item = create_maintenance_item(State(state.clone()), Json(create_request))
-        .await
-        .unwrap()
-        .0;
+    let item = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let item_id = item.id.id.to_string();
 
     // Initial remaining_mileage with no shifts (defaults to 0 latest mileage)
@@ -619,10 +803,14 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
     let start_request = StartShiftRequest {
         odometer_start: 11000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -633,24 +821,28 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
 
     // Fetch the maintenance item again
     // New remaining: 3000 - (12500 - 10000) = 500
-    let updated_item = get_maitenance_item_by_id(&state.db, &item_id)
-        .await
-        .unwrap();
+    let updated_item = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(updated_item.remaining_mileage, 500);
 }
 
 #[tokio::test]
 async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let db_provider = Arc::new(DbProvider::Single(SingleDbProvider { db: db.clone() }));
+    let state = Arc::new(AppState {
+        db_provider: db_provider.clone(),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create maintenance item
     let create_request = CreateMaintenanceItemRequest {
@@ -660,20 +852,28 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
         enabled: true,
         notes: None,
     };
-    let item = create_maintenance_item(State(state.clone()), Json(create_request))
-        .await
-        .unwrap()
-        .0;
+    let item = create_maintenance_item(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(create_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let item_id = item.id.id.to_string();
 
     // Create a shift
     let start_request = StartShiftRequest {
         odometer_start: 8000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -684,16 +884,15 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
 
     // Check initial remaining: 5000 - (9000 - 5000) = 1000
-    let item_after_shift = get_maitenance_item_by_id(&state.db, &item_id)
-        .await
-        .unwrap();
+    let item_after_shift = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(item_after_shift.remaining_mileage, 1000);
 
     // Update shift odometer_end to 9500
@@ -709,32 +908,39 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     };
 
     let _ = update_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id),
+        Extension(state.clone()),
+        Path(shift_id),
+        Extension(session_id.clone()),
         Json(update_request),
     )
     .await;
 
     // Check updated remaining: 5000 - (9500 - 5000) = 500
-    let item_after_update = get_maitenance_item_by_id(&state.db, &item_id)
-        .await
-        .unwrap();
+    let item_after_update = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(item_after_update.remaining_mileage, 500);
 }
 
 #[tokio::test]
 async fn test_update_shift_start_time() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
     let original_start = shift.start_time;
 
@@ -747,8 +953,9 @@ async fn test_update_shift_start_time() {
         notes: None,
     };
     let ended_shift = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -771,8 +978,9 @@ async fn test_update_shift_start_time() {
     };
 
     let result = update_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(update_request),
     )
     .await;
@@ -790,16 +998,24 @@ async fn test_update_shift_start_time() {
 #[tokio::test]
 async fn test_update_shift_end_time() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start and end a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -810,8 +1026,9 @@ async fn test_update_shift_end_time() {
         notes: None,
     };
     let ended_shift = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -835,8 +1052,9 @@ async fn test_update_shift_end_time() {
     };
 
     let result = update_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(update_request),
     )
     .await;
@@ -858,16 +1076,24 @@ async fn test_update_shift_end_time() {
 #[tokio::test]
 async fn test_update_shift_both_times() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start and end a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
     let original_start = shift.start_time;
 
@@ -879,8 +1105,9 @@ async fn test_update_shift_both_times() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -902,8 +1129,9 @@ async fn test_update_shift_both_times() {
     };
 
     let result = update_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(update_request),
     )
     .await;
@@ -926,16 +1154,24 @@ async fn test_update_shift_both_times() {
 #[tokio::test]
 async fn test_update_shift_invalid_end_before_start() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start and end a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -946,8 +1182,9 @@ async fn test_update_shift_invalid_end_before_start() {
         notes: None,
     };
     let ended_shift = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -969,8 +1206,9 @@ async fn test_update_shift_invalid_end_before_start() {
     };
 
     let result = update_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -982,16 +1220,24 @@ async fn test_update_shift_invalid_end_before_start() {
 #[tokio::test]
 async fn test_update_shift_invalid_start_after_end() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start and end a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -1002,8 +1248,9 @@ async fn test_update_shift_invalid_start_after_end() {
         notes: None,
     };
     let ended_shift = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -1025,8 +1272,9 @@ async fn test_update_shift_invalid_start_after_end() {
     };
 
     let result = update_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -1038,16 +1286,24 @@ async fn test_update_shift_invalid_start_after_end() {
 #[tokio::test]
 async fn test_update_shift_invalid_datetime_format() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
 
     // Try to update with invalid datetime format
@@ -1063,8 +1319,9 @@ async fn test_update_shift_invalid_datetime_format() {
     };
 
     let result = update_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -1076,16 +1333,24 @@ async fn test_update_shift_invalid_datetime_format() {
 #[tokio::test]
 async fn test_update_shift_time_recalculates_hourly_pay() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Start and end a shift
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift_id = shift.id.id.to_string();
     let start_time = shift.start_time;
 
@@ -1097,8 +1362,9 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
         notes: None,
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift_id.clone()),
+        Extension(state.clone()),
+        Path(shift_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await
@@ -1119,8 +1385,9 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
     };
 
     let result = update_shift(
-        State(state),
-        axum::extract::Path(shift_id),
+        Extension(state),
+        Path(shift_id),
+        Extension(session_id),
         Json(update_request),
     )
     .await;
@@ -1141,17 +1408,25 @@ async fn test_export_csv_all_shifts() {
     use http_body_util::BodyExt;
 
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create multiple shifts
     for i in 0..3 {
         let start_request = StartShiftRequest {
             odometer_start: 10000 + (i * 100),
         };
-        let shift = start_shift(State(state.clone()), Json(start_request))
-            .await
-            .unwrap()
-            .0;
+        let shift = start_shift(
+            Extension(state.clone()),
+            Extension(session_id.clone()),
+            Json(start_request),
+        )
+        .await
+        .unwrap()
+        .0;
         let shift_id = shift.id.id.to_string();
 
         let end_request = EndShiftRequest {
@@ -1162,8 +1437,9 @@ async fn test_export_csv_all_shifts() {
             notes: Some(format!("Shift {}", i)),
         };
         let _ = end_shift(
-            State(state.clone()),
-            axum::extract::Path(shift_id),
+            Extension(state.clone()),
+            Path(shift_id),
+            Extension(session_id.clone()),
             Json(end_request),
         )
         .await;
@@ -1174,7 +1450,7 @@ async fn test_export_csv_all_shifts() {
         start: None,
         end: None,
     };
-    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    let result = export_csv(Extension(state), Extension(session_id), Query(params)).await;
     assert!(result.is_ok());
 
     // Convert to response and extract CSV content
@@ -1216,7 +1492,11 @@ async fn test_export_csv_with_date_range() {
     use http_body_util::BodyExt;
 
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     // Create shifts with specific times
     let base_time = Utc::now();
@@ -1225,10 +1505,14 @@ async fn test_export_csv_with_date_range() {
     let start_request = StartShiftRequest {
         odometer_start: 10000,
     };
-    let shift1 = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift1 = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift1_id = shift1.id.id.to_string();
 
     // End shift1 first
@@ -1240,8 +1524,9 @@ async fn test_export_csv_with_date_range() {
         notes: Some("Old shift".to_string()),
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift1_id.clone()),
+        Extension(state.clone()),
+        Path(shift1_id.clone()),
+        Extension(session_id.clone()),
         Json(end_request1),
     )
     .await;
@@ -1259,8 +1544,9 @@ async fn test_export_csv_with_date_range() {
         odometer_start: None,
     };
     let _ = update_shift(
-        State(state.clone()),
-        axum::extract::Path(shift1_id),
+        Extension(state.clone()),
+        Path(shift1_id),
+        Extension(session_id.clone()),
         Json(update1),
     )
     .await;
@@ -1269,10 +1555,14 @@ async fn test_export_csv_with_date_range() {
     let start_request = StartShiftRequest {
         odometer_start: 10100,
     };
-    let shift2 = start_shift(State(state.clone()), Json(start_request))
-        .await
-        .unwrap()
-        .0;
+    let shift2 = start_shift(
+        Extension(state.clone()),
+        Extension(session_id.clone()),
+        Json(start_request),
+    )
+    .await
+    .unwrap()
+    .0;
     let shift2_id = shift2.id.id.to_string();
 
     let end_request = EndShiftRequest {
@@ -1283,8 +1573,9 @@ async fn test_export_csv_with_date_range() {
         notes: Some("Recent shift".to_string()),
     };
     let _ = end_shift(
-        State(state.clone()),
-        axum::extract::Path(shift2_id),
+        Extension(state.clone()),
+        Path(shift2_id),
+        Extension(session_id.clone()),
         Json(end_request),
     )
     .await;
@@ -1297,7 +1588,7 @@ async fn test_export_csv_with_date_range() {
         start: Some(start_of_today),
         end: Some(end_of_today),
     };
-    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    let result = export_csv(Extension(state), Extension(session_id), Query(params)).await;
     assert!(result.is_ok());
 
     // Convert to response and extract CSV content
@@ -1332,13 +1623,17 @@ async fn test_export_csv_empty_database() {
     use http_body_util::BodyExt;
 
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let params = OptionalDateRangeQuery {
         start: None,
         end: None,
     };
-    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    let result = export_csv(Extension(state), Extension(session_id), Query(params)).await;
     assert!(result.is_ok());
 
     // Convert to response and extract CSV content
@@ -1368,13 +1663,17 @@ async fn test_export_csv_empty_database() {
 #[tokio::test]
 async fn test_export_csv_invalid_date_format() {
     let db = common::setup_test_db().await;
-    let state = Arc::new(AppState { db });
+    let state = Arc::new(AppState {
+        db_provider: Arc::new(DbProvider::Single(SingleDbProvider { db })),
+        is_demo_mode: false,
+    });
+    let session_id = SessionId("test-session".to_string());
 
     let params = OptionalDateRangeQuery {
         start: Some("invalid-date".to_string()),
         end: Some("2025-12-31T23:59:59Z".to_string()),
     };
-    let result = export_csv(State(state), axum::extract::Query(params)).await;
+    let result = export_csv(Extension(state), Extension(session_id), Query(params)).await;
 
     // Verify the export fails with invalid date format
     assert!(result.is_err());
