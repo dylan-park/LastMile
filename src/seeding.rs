@@ -8,132 +8,199 @@ use rust_decimal::Decimal;
 use rust_decimal::prelude::FromPrimitive;
 use surrealdb::{Surreal, engine::local::Db};
 
+// Constants
+const STARTING_ODOMETER: i32 = 163000;
+const SEED_DAYS: i64 = 90;
+const SHIFT_PROBABILITY: f64 = 0.7;
+
+// Helper struct for random shift data
+struct ShiftData {
+    start_hour: u32,
+    start_minute: u32,
+    hours_worked_float: f64,
+    miles_driven: i32,
+    earnings_float: f64,
+    tips_float: f64,
+    gas_per_mile: f64,
+}
+
+impl ShiftData {
+    /// Generate random shift data
+    fn random() -> Option<Self> {
+        let mut rng = rand::rng();
+
+        if !rng.random_bool(SHIFT_PROBABILITY) {
+            return None;
+        }
+
+        Some(Self {
+            start_hour: rng.random_range(7..15),
+            start_minute: rng.random_range(0..60),
+            hours_worked_float: rng.random_range(7.0..8.75),
+            miles_driven: rng.random_range(80..161),
+            earnings_float: rng.random_range(30.0..60.0),
+            tips_float: rng.random_range(35.0..85.0),
+            gas_per_mile: rng.random_range(0.08..0.15),
+        })
+    }
+
+    /// Convert to ShiftRecord and return new odometer reading
+    fn to_shift_record(
+        &self,
+        current_date: chrono::DateTime<Utc>,
+        current_odometer: i32,
+    ) -> (ShiftRecord, i32) {
+        let start_time = current_date
+            .date_naive()
+            .and_hms_opt(self.start_hour, self.start_minute, 0)
+            .expect("Invalid time values")
+            .and_local_timezone(Utc)
+            .unwrap();
+
+        let hours_worked = Decimal::from_f64(self.hours_worked_float)
+            .expect("Invalid hours_worked float")
+            .round_dp(2);
+
+        let duration_seconds = (self.hours_worked_float * 3600.0) as i64;
+        let end_time = start_time + Duration::seconds(duration_seconds);
+
+        let odometer_start = current_odometer;
+        let odometer_end = odometer_start + self.miles_driven;
+        let gas_cost_float = self.miles_driven as f64 * self.gas_per_mile;
+
+        let earnings = Decimal::from_f64(self.earnings_float)
+            .expect("Invalid earnings float")
+            .round_dp(2);
+        let tips = Decimal::from_f64(self.tips_float)
+            .expect("Invalid tips float")
+            .round_dp(2);
+        let gas_cost = Decimal::from_f64(gas_cost_float)
+            .expect("Invalid gas_cost float")
+            .round_dp(2);
+
+        let day_total = (earnings + tips - gas_cost).round_dp(2);
+        let hourly_pay = (day_total / hours_worked).round_dp(2);
+
+        let record = ShiftRecord {
+            start_time: start_time.into(),
+            end_time: Some(end_time.into()),
+            hours_worked: Some(hours_worked),
+            odometer_start,
+            odometer_end: Some(odometer_end),
+            miles_driven: Some(self.miles_driven),
+            earnings,
+            tips,
+            gas_cost,
+            day_total,
+            hourly_pay: Some(hourly_pay),
+            notes: None,
+        };
+
+        (record, odometer_end)
+    }
+}
+
+// Maintenance item configuration
+struct MaintenanceConfig {
+    name: &'static str,
+    interval: i32,
+    max_random_offset: i32,
+    notes: Option<&'static str>,
+}
+
+impl MaintenanceConfig {
+    fn create_record(
+        &self,
+        current_mileage: i32,
+        last_service_offset: i32,
+    ) -> MaintenanceItemRecord {
+        let last_service_mileage = current_mileage - last_service_offset;
+
+        MaintenanceItemRecord {
+            name: self.name.to_string(),
+            mileage_interval: self.interval,
+            last_service_mileage,
+            remaining_mileage: calculate_remaining_mileage(
+                current_mileage,
+                last_service_mileage,
+                self.interval,
+            ),
+            enabled: true,
+            notes: self.notes.map(|s| s.to_string()),
+        }
+    }
+}
+
 pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
     setup_database(db).await;
 
-    // Generate Shifts
-    let mut rng = rand::rng();
-    let mut current_odometer = 163000;
+    let mut current_odometer = STARTING_ODOMETER;
 
-    // Generate dates (last 3 months)
+    // Seed shifts
+    current_odometer = seed_shifts(db, current_odometer).await?;
+
+    // Seed maintenance items
+    seed_maintenance_items(db, current_odometer).await?;
+
+    Ok(())
+}
+
+async fn seed_shifts(db: &Surreal<Db>, starting_odometer: i32) -> surrealdb::Result<i32> {
+    let mut current_odometer = starting_odometer;
     let end_date = Utc::now();
-    let start_date = end_date - Duration::days(90);
+    let start_date = end_date - Duration::days(SEED_DAYS);
     let mut current_date = start_date;
 
     while current_date <= end_date {
-        // 5 random days per week logic approximated: 70% chance of shift per day
-        if rng.random_bool(0.7) {
-            // Random start time (07:00 - 15:00)
-            let start_hour = rng.random_range(7..15);
-            let start_minute = rng.random_range(0..60);
-            let start_time = current_date
-                .date_naive()
-                .and_hms_opt(start_hour, start_minute, 0)
-                .unwrap()
-                .and_local_timezone(Utc)
-                .unwrap();
-
-            // Random duration (7.0 - 8.75 hours)
-            let hours_worked_float = rng.random_range(7.0..8.75);
-            let hours_worked = Decimal::from_f64(hours_worked_float).unwrap().round_dp(2);
-
-            let duration_seconds = (hours_worked_float * 3600.0) as i64;
-            let end_time = start_time + Duration::seconds(duration_seconds);
-
-            // Miles driven (80 - 160)
-            let miles_driven = rng.random_range(80..161);
-            let odometer_start = current_odometer;
-            let odometer_end = odometer_start + miles_driven;
-
-            // Financials
-            let earnings_float = rng.random_range(30.0..60.0);
-            let tips_float = rng.random_range(35.0..85.0);
-            let gas_per_mile = rng.random_range(0.08..0.15);
-            let gas_cost_float = miles_driven as f64 * gas_per_mile;
-
-            let earnings = Decimal::from_f64(earnings_float).unwrap().round_dp(2);
-            let tips = Decimal::from_f64(tips_float).unwrap().round_dp(2);
-            let gas_cost = Decimal::from_f64(gas_cost_float).unwrap().round_dp(2);
-            let day_total = (earnings + tips - gas_cost).round_dp(2);
-            let hourly_pay = (day_total / hours_worked).round_dp(2);
-
-            let record = ShiftRecord {
-                start_time: start_time.into(),
-                end_time: Some(end_time.into()),
-                hours_worked: Some(hours_worked),
-                odometer_start,
-                odometer_end: Some(odometer_end),
-                miles_driven: Some(miles_driven),
-                earnings,
-                tips,
-                gas_cost,
-                day_total,
-                hourly_pay: Some(hourly_pay),
-                notes: None,
-            };
+        if let Some(shift_data) = ShiftData::random() {
+            let (record, new_odometer) = shift_data.to_shift_record(current_date, current_odometer);
 
             let _: Option<Shift> = db.create("shifts").content(record).await?;
-
-            current_odometer = odometer_end;
+            current_odometer = new_odometer;
         }
+
         current_date += Duration::days(1);
     }
 
-    // Generate Maintenance Items
-    let current_mileage = current_odometer;
+    Ok(current_odometer)
+}
 
-    // Oil Change (every 3000 miles)
-    let oil_last = current_mileage - rng.random_range(100..2900);
-    let oil_interval = 3000;
-    let _: Option<MaintenanceItem> = db
-        .create("maintenance")
-        .content(MaintenanceItemRecord {
-            name: "Oil Change".to_string(),
-            mileage_interval: oil_interval,
-            last_service_mileage: oil_last,
-            remaining_mileage: calculate_remaining_mileage(current_mileage, oil_last, oil_interval),
-            enabled: true,
-            notes: Some("Synthetic".to_string()),
-        })
-        .await?;
-
-    // Tire Rotation (every 5000 miles)
-    let tire_last = current_mileage - rng.random_range(100..4900);
-    let tire_interval = 5000;
-    let _: Option<MaintenanceItem> = db
-        .create("maintenance")
-        .content(MaintenanceItemRecord {
-            name: "Tire Rotation".to_string(),
-            mileage_interval: tire_interval,
-            last_service_mileage: tire_last,
-            remaining_mileage: calculate_remaining_mileage(
-                current_mileage,
-                tire_last,
-                tire_interval,
-            ),
-            enabled: true,
+async fn seed_maintenance_items(db: &Surreal<Db>, current_mileage: i32) -> surrealdb::Result<()> {
+    let configs = [
+        MaintenanceConfig {
+            name: "Oil Change",
+            interval: 3000,
+            max_random_offset: 2900,
+            notes: Some("Synthetic"),
+        },
+        MaintenanceConfig {
+            name: "Tire Rotation",
+            interval: 5000,
+            max_random_offset: 4900,
             notes: None,
-        })
-        .await?;
-
-    // Brake Inspection (every 10000 miles)
-    let brake_last = current_mileage - rng.random_range(100..9900);
-    let brake_interval = 10000;
-    let _: Option<MaintenanceItem> = db
-        .create("maintenance")
-        .content(MaintenanceItemRecord {
-            name: "Brake Inspection".to_string(),
-            mileage_interval: brake_interval,
-            last_service_mileage: brake_last,
-            remaining_mileage: calculate_remaining_mileage(
-                current_mileage,
-                brake_last,
-                brake_interval,
-            ),
-            enabled: true,
+        },
+        MaintenanceConfig {
+            name: "Brake Inspection",
+            interval: 10000,
+            max_random_offset: 9900,
             notes: None,
-        })
-        .await?;
+        },
+    ];
+
+    // Generate all random offsets at once
+    let offsets: Vec<i32> = {
+        let mut rng = rand::rng();
+        configs
+            .iter()
+            .map(|config| rng.random_range(100..config.max_random_offset))
+            .collect()
+    };
+
+    // Create all maintenance items
+    for (config, offset) in configs.iter().zip(offsets.iter()) {
+        let record = config.create_record(current_mileage, *offset);
+        let _: Option<MaintenanceItem> = db.create("maintenance").content(record).await?;
+    }
 
     Ok(())
 }
