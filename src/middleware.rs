@@ -17,14 +17,14 @@ pub async fn session_middleware(
     // Extract session ID from cookie or generate new one
     let mut session_id = None;
 
-    if let Some(cookie_header) = req.headers().get(axum::http::header::COOKIE) {
-        if let Ok(cookie_str) = cookie_header.to_str() {
-            for cookie in cookie_str.split(';') {
-                let parts: Vec<&str> = cookie.splitn(2, '=').collect();
-                if parts.len() == 2 && parts[0].trim() == "lastmile_session" {
-                    session_id = Some(parts[1].trim().to_string());
-                    break;
-                }
+    if let Some(cookie_header) = req.headers().get(axum::http::header::COOKIE)
+        && let Ok(cookie_str) = cookie_header.to_str()
+    {
+        for cookie in cookie_str.split(';') {
+            let parts: Vec<&str> = cookie.splitn(2, '=').collect();
+            if parts.len() == 2 && parts[0].trim() == "lastmile_session" {
+                session_id = Some(parts[1].trim().to_string());
+                break;
             }
         }
     }

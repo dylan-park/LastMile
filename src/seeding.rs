@@ -76,7 +76,7 @@ pub async fn seed_demo_data(db: &Surreal<Db>) -> surrealdb::Result<()> {
 
             current_odometer = odometer_end;
         }
-        current_date = current_date + Duration::days(1);
+        current_date += Duration::days(1);
     }
 
     // Generate Maintenance Items
