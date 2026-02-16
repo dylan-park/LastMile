@@ -2206,7 +2206,7 @@ dependencies = [
 
 [[package]]
 name = "lastmile"
-version = "0.8.2"
+version = "0.8.3"
 dependencies = [
  "async-trait",
  "axum",
