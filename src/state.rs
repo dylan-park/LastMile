@@ -40,6 +40,12 @@ pub struct DemoDbProvider {
     sessions: Arc<DashMap<String, (Surreal<Db>, Instant)>>,
 }
 
+impl Default for DemoDbProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DemoDbProvider {
     pub fn new() -> Self {
         Self {

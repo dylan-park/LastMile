@@ -358,7 +358,7 @@ async fn test_create_maintenance_item() {
     assert_eq!(item.name, "Oil Change");
     assert_eq!(item.mileage_interval, 3000);
     assert_eq!(item.last_service_mileage, 10000);
-    assert_eq!(item.enabled, true);
+    assert!(item.enabled);
     assert_eq!(item.notes, Some("Full synthetic".to_string()));
     // With no shifts, remaining_mileage should be interval (3000 - (0 - 10000) = 3000, clamped)
     assert_eq!(item.remaining_mileage, 3000);
@@ -411,7 +411,7 @@ async fn test_update_maintenance_item() {
     assert_eq!(updated.name, "Oil Change - Updated");
     assert_eq!(updated.mileage_interval, 5000);
     assert_eq!(updated.last_service_mileage, 15000);
-    assert_eq!(updated.enabled, false);
+    assert!(!updated.enabled);
     assert_eq!(updated.notes, Some("Now using synthetic".to_string()));
 }
 

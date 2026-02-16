@@ -227,7 +227,6 @@ pub struct RequiredMaintenanceResponse {
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use rust_decimal_macros::dec;
@@ -435,7 +434,7 @@ mod tests {
         assert_eq!(request.name, "Oil Change");
         assert_eq!(request.mileage_interval, 3000);
         assert_eq!(request.last_service_mileage, Some(10000));
-        assert_eq!(request.enabled, true);
+        assert!(request.enabled);
         assert_eq!(request.notes, Some("Full synthetic".to_string()));
     }
 
@@ -451,7 +450,7 @@ mod tests {
         assert_eq!(request.name, "Tire Rotation");
         assert_eq!(request.mileage_interval, 5000);
         assert_eq!(request.last_service_mileage, None);
-        assert_eq!(request.enabled, true);
+        assert!(request.enabled);
         assert_eq!(request.notes, None);
     }
 }
