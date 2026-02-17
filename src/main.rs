@@ -65,7 +65,7 @@ where
     S: Service<Request<Body>, Response = Response<B>> + Clone + Send + 'static,
     S::Future: Send + 'static,
     S::Error: 'static,
-    B: HttpBody + Send + 'static, // ✅ Generic body support here
+    B: HttpBody + Send + 'static,
 {
     type Response = Response<B>;
     type Error = S::Error;
