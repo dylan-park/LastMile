@@ -127,45 +127,78 @@ surreal export --endpoint file://./data --namespace lastmile --database main exp
 ## Architecture Layers
 
 ```mermaid
-graph TB
-    subgraph Frontend["Frontend (Vanilla JS)"]
-        HTML[index.html]
-        UI[ui.js - UI Components]
-        APP[app.js - State Management]
-        API_CLIENT[api.js - API Client]
-        UTILS[utils.js - Utilities]
-    end
-    
-    subgraph Backend["Backend (Rust + Axum)"]
-        MAIN[main.rs - Server Setup]
-        HANDLERS[handlers/ - Route Handlers]
-        MODELS[models.rs - Data Models]
-        VALIDATION[validation.rs - Input Validation]
-        CALCULATIONS[calculations.rs - Business Logic]
-        ERROR[error.rs - Error Handling]
-    end
-    
-    subgraph Database["Database Layer"]
-        DB_SETUP[db/mod.rs - Schema Setup]
-        DB_HELPERS[db/helpers.rs - Query Helpers]
-        SURREALDB[(SurrealDB + RocksDB)]
-    end
-    
-    subgraph Testing["Testing"]
-        UNIT[tests/handler.rs - Unit Tests]
-        E2E[scripts/e2e.py - E2E Tests]
-    end
-    
-    Frontend --> MAIN
-    MAIN --> HANDLERS
-    HANDLERS --> MODELS
-    HANDLERS --> VALIDATION
-    HANDLERS --> CALCULATIONS
-    HANDLERS --> DB_HELPERS
-    DB_HELPERS --> SURREALDB
-    DB_SETUP --> SURREALDB
-    UNIT -.-> HANDLERS
-    E2E -.-> Frontend
+%%{init: {
+  "flowchart": {
+    "defaultRenderer": "elk",
+    "curve": "linear",
+    "nodeSpacing": 80,
+    "rankSpacing": 100
+  }
+}}%%
+
+flowchart LR
+
+%% ---------------- FRONTEND ----------------
+subgraph Frontend["Frontend (Vanilla JS)"]
+  direction TB
+  HTML[index.html]
+  CSS[styles.css - Styling]
+  UI[ui.js - UI Components]
+  APP[app.js - State Management]
+  API_CLIENT[api.js - API Client]
+  UTILS[utils.js - Utilities]
+end
+
+%% ---------------- BACKEND ----------------
+subgraph Backend["Backend (Rust + Axum)"]
+  direction TB
+  MAIN[main.rs - Binary Entry]
+  MIDDLEWARE[middleware.rs - Session Middleware]
+  STATE[state.rs - App State]
+  SEEDING[seeding.rs - Sample Data]
+  HANDLERS[handlers/ - Route Handlers]
+  MODELS[models.rs - Data Models]
+  VALIDATION[validation.rs - Input Validation]
+  CALCULATIONS[calculations.rs - Business Logic]
+end
+
+%% ---------------- DATABASE ----------------
+subgraph Database["Database Layer"]
+  direction TB
+  DB_SETUP[db/mod.rs - Schema Setup]
+  DB_HELPERS[db/helpers.rs - Query Helpers]
+  SURREALDB[(SurrealDB + RocksDB/Memory)]
+end
+
+%% ---------------- TESTING ----------------
+subgraph Testing["Testing"]
+  direction TB
+  INTEGRATION[tests/handler.rs - Integration Tests]
+  TEST_HELPER[tests/helper.rs - Query Helpers Tests]
+  E2E[scripts/e2e.py - E2E Tests]
+end
+
+%% ---------------- FLOW ----------------
+
+Frontend --> MAIN
+
+MAIN --> MIDDLEWARE
+MAIN --> STATE
+MAIN --> SEEDING
+MAIN --> HANDLERS
+MAIN --> DB_SETUP
+
+HANDLERS --> MODELS
+HANDLERS --> VALIDATION
+HANDLERS --> CALCULATIONS
+HANDLERS --> DB_HELPERS
+
+DB_HELPERS --> SURREALDB
+DB_SETUP --> SURREALDB
+
+E2E -.-> Frontend
+INTEGRATION -.-> HANDLERS
+TEST_HELPER -.-> DB_HELPERS
 ```
 
 ## Technology Stack
