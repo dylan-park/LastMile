@@ -68,4 +68,5 @@ ENV DATABASE_PATH=/app/data \
     RUST_LOG=info
 
 # Run the binary
-CMD ["./lastmile"]
+ENTRYPOINT ["./lastmile"]
+CMD []

@@ -74,17 +74,45 @@ docker run -d \
 
 Access the application at [http://localhost:3000](http://localhost:3000)
 
+#### Demo Docker
+
+```bash
+docker build -t lastmile .
+docker run -d \
+  --name lastmile-demo \
+  --hostname lastmile-demo \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -v ./static:/app/static:ro \
+  -e PORT=3000 \
+  -e TZ=America/Chicago \
+  -e RUST_LOG=info \
+  lastmile --demo
+```
+
+Read more about Demo Mode [here](#demo-mode).
+
 ### Docker Compose
 
 For the easiest deployment:
 
 ```bash
-docker-compose up -d
+docker build -t lastmile .
+docker compose up lastmile -d
 ```
 
 The application will be available at [http://localhost:3000](http://localhost:3000) with persistent data storage.
 
 See [docker-compose.yaml](docker-compose.yaml) for configuration options.
+
+#### Demo Docker Compose
+
+```bash
+docker build -t lastmile .
+docker compose up lastmile-demo -d
+```
+
+Read more about Demo Mode [here](#demo-mode).
 
 ## Configuration
 
@@ -239,6 +267,7 @@ cargo run --release -- --e2e
 
 ## Future Work
 
+- [ ] Improve CSS styling for Demo Mode popup on mobile
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
     - [ ] Improve table view

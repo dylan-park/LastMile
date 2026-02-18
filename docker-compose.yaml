@@ -1,8 +1,8 @@
+name: lastmile
+
 services:
   lastmile:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lastmile
     container_name: lastmile
     hostname: lastmile
     restart: unless-stopped
@@ -11,10 +11,8 @@ services:
       - DATABASE_PATH=/app/data
       # Network configuration
       - PORT=3000
-
       # Timezone
       - TZ=America/Chicago
-
       # Logging
       - RUST_LOG=info
     ports:
@@ -23,6 +21,32 @@ services:
     volumes:
       # Mount database data
       - ./data:/app/data
+      # Optional: Mount static files for easy updates without rebuild
+      - ./static:/app/static:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/shifts/active"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  lastmile-demo:
+    image: lastmile
+    command: ["--demo"]
+    container_name: lastmile-demo
+    hostname: lastmile-demo
+    restart: unless-stopped
+    environment:
+      # Network configuration
+      - PORT=3000
+      # Timezone
+      - TZ=America/Chicago
+      # Logging
+      - RUST_LOG=info
+    ports:
+      # Application port
+      - "3000:3000"
+    volumes:
       # Optional: Mount static files for easy updates without rebuild
       - ./static:/app/static:ro
     healthcheck:
