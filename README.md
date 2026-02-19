@@ -1,6 +1,6 @@
 # LastMile
 
-[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Rust](https://img.shields.io/badge/rust-1.88.0%2B-orange.svg)](https://www.rust-lang.org/) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.6-purple.svg)](https://surrealdb.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
+[![CI](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dylan-park/LastMile/actions/workflows/ci.yml) [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://lastmile.dylan-park.com/) [![Rust](https://img.shields.io/badge/rust-1.88.0%2B-orange.svg)](https://www.rust-lang.org/) [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.6-purple.svg)](https://surrealdb.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 A self-hosted web application for independent delivery couriers to track shifts, earnings, and vehicle maintenance. Built with Rust and SurrealDB, LastMile helps drivers stay on top of their finances and vehicle health without relying on third-party services or tedious spreadsheets.
 
@@ -29,6 +29,13 @@ LastMile was born out of necessity. When circumstances led me to food delivery w
 ![Maintenance View](.github/screenshots/maintenance_view.png)
 
 ## Quick Start
+
+### Live Demo
+
+Try LastMile in your browser:  
+[Launch Demo](https://lastmile.dylan-park.com/)
+
+Read more about [Demo Mode](#demo-mode).
 
 ### Prerequisites
 
@@ -90,7 +97,7 @@ docker run -d \
   lastmile --demo
 ```
 
-Read more about Demo Mode [here](#demo-mode).
+Read more about [Demo Mode](#demo-mode).
 
 ### Docker Compose
 
@@ -112,7 +119,7 @@ docker build -t lastmile .
 docker compose up lastmile-demo -d
 ```
 
-Read more about Demo Mode [here](#demo-mode).
+Read more about [Demo Mode](#demo-mode).
 
 ## Configuration
 
