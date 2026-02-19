@@ -319,6 +319,7 @@ const UI = {
     const viewToggle = document.querySelector(".view-toggle-container");
     const header = document.querySelector(".header");
     document.body.insertAdjacentElement("afterbegin", banner);
+    setTimeout(() => this.hideDemoBanner(), 8000); // auto-close after 8 seconds
   },
 
   hideDemoBanner() {

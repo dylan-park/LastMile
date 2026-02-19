@@ -274,7 +274,6 @@ cargo run --release -- --e2e
 
 ## Future Work
 
-- [ ] Improve CSS styling for Demo Mode popup on mobile
 - [ ] Improve CSS styling rules
   - [ ] Focus more on mobile experience
     - [ ] Improve table view

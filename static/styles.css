@@ -1280,6 +1280,7 @@ td[contenteditable="true"]:focus {
     }
 
     .demo-banner {
+        left: var(--spacing-lg);
         flex-direction: column;
         align-items: flex-start;
         padding: var(--spacing-md);
