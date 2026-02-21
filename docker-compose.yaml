@@ -24,7 +24,7 @@ services:
       # Optional: Mount static files for easy updates without rebuild
       - ./static:/app/static:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/shifts/active"]
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,7 +50,7 @@ services:
       # Optional: Mount static files for easy updates without rebuild
       - ./static:/app/static:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/shifts/active"]
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

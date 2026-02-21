@@ -1,6 +1,7 @@
 use crate::seeding::seed_demo_data;
 
 use dashmap::DashMap;
+use serde_json;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use surrealdb::{
@@ -21,6 +22,13 @@ impl DbProvider {
             DbProvider::Demo(p) => p.get_db(session_id).await,
         }
     }
+
+    pub async fn check_health(&self) -> serde_json::Value {
+        match self {
+            DbProvider::Single(p) => p.check_health().await,
+            DbProvider::Demo(p) => p.check_health().await,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -31,6 +39,25 @@ pub struct SingleDbProvider {
 impl SingleDbProvider {
     async fn get_db(&self, _session_id: Option<&str>) -> surrealdb::Result<Surreal<Db>> {
         Ok(self.db.clone())
+    }
+
+    async fn check_health(&self) -> serde_json::Value {
+        match self.db.version().await {
+            Ok(version) => {
+                serde_json::json!({
+                    "status": "ok",
+                    "mode": "persistent",
+                    "db_version": version.to_string(),
+                })
+            }
+            Err(e) => {
+                serde_json::json!({
+                    "status": "error",
+                    "mode": "persistent",
+                    "error": e.to_string(),
+                })
+            }
+        }
     }
 }
 
@@ -82,6 +109,14 @@ impl DemoDbProvider {
         self.sessions
             .insert(id.to_string(), (db.clone(), Instant::now()));
         Ok(db)
+    }
+
+    async fn check_health(&self) -> serde_json::Value {
+        serde_json::json!({
+            "status": "ok",
+            "mode": "demo",
+            "active_sessions": self.sessions.len(),
+        })
     }
 }
 

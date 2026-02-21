@@ -1,5 +1,6 @@
 use crate::{
     handlers::{
+        health::health_check,
         maintenance::{
             calculate_required_maintenance, create_maintenance_item, delete_maintenance_item,
             get_all_maintenance_items, update_maintenance_item,
@@ -167,6 +168,7 @@ async fn main() {
         // API routes
         // General
         .route("/api/version", get(get_version))
+        .route("/api/health", get(health_check))
         // Shifts
         .route("/api/shifts", get(get_all_shifts))
         .route("/api/shifts/range", get(get_shifts_by_range))
