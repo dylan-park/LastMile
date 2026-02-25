@@ -276,7 +276,7 @@ cargo run --release -- --e2e
 
 ## Future Work
 
-None for now! :)
+- [ ] Bump SurrealDB version to 3.x.x
 
 ## License
 
