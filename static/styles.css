@@ -923,10 +923,10 @@ td[contenteditable="true"]:focus {
     box-shadow: var(--shadow-lg);
     position: relative;
     z-index: 1001;
-    animation: slideUp 0.3s ease;
+    animation: modalSlideIn 0.3s ease;
 }
 
-@keyframes slideUp {
+@keyframes modalSlideIn {
     from {
         opacity: 0;
         transform: translateY(20px);
