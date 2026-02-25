@@ -1172,6 +1172,129 @@ td[contenteditable="true"]:focus {
     display: none !important;
 }
 
+/* ===== TABLE SCROLL ENHANCEMENTS =====
+   These apply at any viewport size — fades and sticky column activate
+   whenever the table is actually scrollable (controlled via JS classes). */
+
+/* Fades live on .table-container (non-scrolling) so they stay pinned
+   to the visible edges while content scrolls beneath them. */
+.table-container {
+    position: relative;
+}
+
+/* Right fade — hidden by default, shown via .can-scroll-right (set by JS) */
+.table-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 48px;
+    background: linear-gradient(to right, transparent, var(--bg-primary));
+    pointer-events: none;
+    border-radius: 0 12px 12px 0;
+    transition: opacity var(--transition-base);
+    opacity: 0;
+    z-index: 3;
+}
+
+.table-container.can-scroll-right::after {
+    opacity: 1;
+}
+
+.table-container.scrolled-end::after {
+    opacity: 0;
+}
+
+/* Left fade — hidden by default, visible once user scrolls right.
+   Offset by --sticky-col-width so it doesn't fade over the pinned column. */
+.table-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--sticky-col-width, 0px);
+    bottom: 0;
+    width: 48px;
+    background: linear-gradient(to left, transparent, var(--bg-primary));
+    pointer-events: none;
+    border-radius: 0;
+    transition: opacity var(--transition-base);
+    opacity: 0;
+    z-index: 3;
+}
+
+.table-container.scrolled-start::before {
+    opacity: 1;
+}
+
+/* Drag-to-scroll cursor states */
+.table-wrapper.is-scrollable {
+    cursor: grab;
+}
+
+.table-wrapper.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+}
+
+/* Sticky first column — always on, harmless when all columns are visible */
+#shiftsTable thead tr th:first-child,
+#maintenanceTable thead tr th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background: var(--bg-tertiary);
+}
+
+#shiftsTable thead tr th:first-child:hover,
+#maintenanceTable thead tr th:first-child:hover {
+    background: var(--bg-hover);
+}
+
+#shiftsTable tbody tr td:first-child,
+#maintenanceTable tbody tr td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--bg-primary);
+    box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
+}
+
+/* Re-declare all interactive states for the sticky td — the explicit
+   background above would otherwise win over inherited row states. */
+#shiftsTable tbody tr:hover td:first-child,
+#maintenanceTable tbody tr:hover td:first-child {
+    background: var(--bg-hover);
+}
+
+#shiftsTable tbody tr td:first-child.datetime-cell:hover,
+#maintenanceTable tbody tr td:first-child.datetime-cell:hover {
+    background: var(--accent-light);
+}
+
+#shiftsTable tbody tr td:first-child[contenteditable="true"]:hover,
+#maintenanceTable tbody tr td:first-child[contenteditable="true"]:hover {
+    background: var(--accent-light);
+}
+
+#shiftsTable tbody tr td:first-child[contenteditable="true"]:focus,
+#maintenanceTable tbody tr td:first-child[contenteditable="true"]:focus {
+    background: var(--bg-primary);
+}
+
+#shiftsTable tbody tr td:first-child.calculated,
+#maintenanceTable tbody tr td:first-child.calculated {
+    background: var(--calculated-bg);
+}
+
+#maintenanceTable tbody tr.maintenance-required td:first-child {
+    background: var(--maintenance-required-bg);
+}
+
+#maintenanceTable tbody tr.maintenance-required:hover td:first-child {
+    background: var(--danger-light);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     body {
@@ -1288,112 +1411,6 @@ td[contenteditable="true"]:focus {
 
     .demo-banner .banner-close {
         align-self: flex-end;
-    }
-
-    /* ----- Table: edge fades -----
-       Fades live on .table-container (non-scrolling) so they stay pinned
-       to the visible edges while content scrolls beneath them. */
-    .table-container {
-        position: relative;
-    }
-
-    /* Right fade — visible by default, hidden when scrolled to end */
-    .table-container::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 48px;
-        background: linear-gradient(to right, transparent, var(--bg-primary));
-        pointer-events: none;
-        border-radius: 0 12px 12px 0;
-        transition: opacity var(--transition-base);
-        opacity: 1;
-        z-index: 3;
-    }
-
-    .table-container.scrolled-end::after {
-        opacity: 0;
-    }
-
-    /* Left fade — hidden by default, visible once user scrolls right.
-       Offset by --sticky-col-width so it doesn't fade over the pinned column. */
-    .table-container::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: var(--sticky-col-width, 0px);
-        bottom: 0;
-        width: 48px;
-        background: linear-gradient(to left, transparent, var(--bg-primary));
-        pointer-events: none;
-        border-radius: 0;
-        transition: opacity var(--transition-base);
-        opacity: 0;
-        z-index: 3;
-    }
-
-    .table-container.scrolled-start::before {
-        opacity: 1;
-    }
-
-    /* ----- Table: sticky first column -----  */
-    #shiftsTable thead tr th:first-child,
-    #maintenanceTable thead tr th:first-child {
-        position: sticky;
-        left: 0;
-        z-index: 11;
-        background: var(--bg-tertiary);
-    }
-
-    #shiftsTable thead tr th:first-child:hover,
-    #maintenanceTable thead tr th:first-child:hover {
-        background: var(--bg-hover);
-    }
-
-    #shiftsTable tbody tr td:first-child,
-    #maintenanceTable tbody tr td:first-child {
-        position: sticky;
-        left: 0;
-        z-index: 1;
-        background: var(--bg-primary);
-        box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
-    }
-
-    /* Re-declare all interactive states for the sticky td — the explicit
-       background above would otherwise win over inherited row states. */
-    #shiftsTable tbody tr:hover td:first-child,
-    #maintenanceTable tbody tr:hover td:first-child {
-        background: var(--bg-hover);
-    }
-
-    #shiftsTable tbody tr td:first-child.datetime-cell:hover,
-    #maintenanceTable tbody tr td:first-child.datetime-cell:hover {
-        background: var(--accent-light);
-    }
-
-    #shiftsTable tbody tr td:first-child[contenteditable="true"]:hover,
-    #maintenanceTable tbody tr td:first-child[contenteditable="true"]:hover {
-        background: var(--accent-light);
-    }
-
-    #shiftsTable tbody tr td:first-child[contenteditable="true"]:focus,
-    #maintenanceTable tbody tr td:first-child[contenteditable="true"]:focus {
-        background: var(--bg-primary);
-    }
-
-    #shiftsTable tbody tr td:first-child.calculated,
-    #maintenanceTable tbody tr td:first-child.calculated {
-        background: var(--calculated-bg);
-    }
-
-    #maintenanceTable tbody tr.maintenance-required td:first-child {
-        background: var(--maintenance-required-bg);
-    }
-
-    #maintenanceTable tbody tr.maintenance-required:hover td:first-child {
-        background: var(--danger-light);
     }
 }
 

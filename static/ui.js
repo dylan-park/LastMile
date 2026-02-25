@@ -330,7 +330,7 @@ const UI = {
     }
   },
 
-  // ===== TABLE SCROLL FADES =====
+  // ===== TABLE SCROLL ENHANCEMENTS =====
   initTableScrollFade(wrapper) {
     if (!wrapper) return;
     const container = wrapper.closest(".table-container");
@@ -338,23 +338,27 @@ const UI = {
 
     const firstTh = wrapper.querySelector("thead tr th:first-child");
 
-    const updateStickyWidth = () => {
+    const update = () => {
+      // Re-measure sticky column width dynamically
       if (firstTh) {
         container.style.setProperty(
           "--sticky-col-width",
           `${firstTh.offsetWidth}px`,
         );
       }
-    };
 
-    const update = () => {
-      updateStickyWidth();
       const scrollLeft = wrapper.scrollLeft;
+      const isScrollable = wrapper.scrollWidth > wrapper.clientWidth + 2;
       const atEnd = scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 2;
       const atStart = scrollLeft <= 2;
 
+      // Fades
+      container.classList.toggle("can-scroll-right", isScrollable);
       container.classList.toggle("scrolled-end", atEnd);
       container.classList.toggle("scrolled-start", !atStart);
+
+      // Drag cursor
+      wrapper.classList.toggle("is-scrollable", isScrollable);
     };
 
     wrapper.addEventListener("scroll", update, { passive: true });
@@ -366,6 +370,83 @@ const UI = {
     if (firstTh) ro.observe(firstTh);
 
     update();
+
+    // ----- Drag-to-scroll (desktop) -----
+    // Touch devices handle their own scrolling natively; this targets mouse only.
+    // Uses a movement threshold to distinguish a drag (scroll) from a click (edit).
+    const DRAG_THRESHOLD = 5;
+
+    let isDragging = false;
+    let hasCrossedThreshold = false;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+
+    wrapper.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest("button, a")) return;
+
+      // Don't interfere if the table doesn't need scrolling
+      if (!wrapper.classList.contains("is-scrollable")) return;
+
+      // Don't interfere if the user is clicking inside an already-focused
+      // editable cell — let them select text normally
+      const active = document.activeElement;
+      if (active && active.isContentEditable && active.contains(e.target))
+        return;
+
+      isDragging = true;
+      hasCrossedThreshold = false;
+      dragStartX = e.clientX;
+      dragStartScrollLeft = wrapper.scrollLeft;
+      // Don't preventDefault here — we need focus events to still fire
+      // so editable cells can activate normally if this turns out to be a click.
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+
+      const delta = dragStartX - e.clientX;
+
+      if (!hasCrossedThreshold) {
+        // Not yet committed to a drag — check if we've moved enough
+        if (Math.abs(delta) < DRAG_THRESHOLD) return;
+
+        // Threshold crossed: this is a drag, not a click
+        hasCrossedThreshold = true;
+        wrapper.classList.add("is-dragging");
+        document.body.style.userSelect = "none";
+        // Clear any selection that formed during the pre-threshold movement
+        window.getSelection()?.removeAllRanges();
+      }
+
+      wrapper.scrollLeft = dragStartScrollLeft + delta;
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+
+      if (hasCrossedThreshold) {
+        // Suppress the click that follows mouseup so it doesn't
+        // accidentally focus/activate whichever cell the drag ended on.
+        window.addEventListener("click", (e) => e.stopPropagation(), {
+          capture: true,
+          once: true,
+        });
+        wrapper.classList.remove("is-dragging");
+        document.body.style.userSelect = "";
+      }
+
+      isDragging = false;
+      hasCrossedThreshold = false;
+    });
+
+    window.addEventListener("mouseleave", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      hasCrossedThreshold = false;
+      wrapper.classList.remove("is-dragging");
+      document.body.style.userSelect = "";
+    });
   },
 
   initAllTableScrollFades() {

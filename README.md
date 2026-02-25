@@ -276,9 +276,7 @@ cargo run --release -- --e2e
 
 ## Future Work
 
-- [ ] Improve CSS styling rules
-  - [ ] Investigate desktop site improvements
-    - [ ] Improve table scrolling
+None for now! :)
 
 ## License
 
