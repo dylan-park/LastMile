@@ -277,8 +277,6 @@ cargo run --release -- --e2e
 ## Future Work
 
 - [ ] Improve CSS styling rules
-  - [ ] Focus more on mobile experience
-    - [ ] Improve table view
   - [ ] Investigate desktop site improvements
     - [ ] Improve table scrolling
 

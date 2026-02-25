@@ -330,6 +330,50 @@ const UI = {
     }
   },
 
+  // ===== TABLE SCROLL FADES =====
+  initTableScrollFade(wrapper) {
+    if (!wrapper) return;
+    const container = wrapper.closest(".table-container");
+    if (!container) return;
+
+    const firstTh = wrapper.querySelector("thead tr th:first-child");
+
+    const updateStickyWidth = () => {
+      if (firstTh) {
+        container.style.setProperty(
+          "--sticky-col-width",
+          `${firstTh.offsetWidth}px`,
+        );
+      }
+    };
+
+    const update = () => {
+      updateStickyWidth();
+      const scrollLeft = wrapper.scrollLeft;
+      const atEnd = scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 2;
+      const atStart = scrollLeft <= 2;
+
+      container.classList.toggle("scrolled-end", atEnd);
+      container.classList.toggle("scrolled-start", !atStart);
+    };
+
+    wrapper.addEventListener("scroll", update, { passive: true });
+
+    // Observe both the wrapper (for container resize) and the sticky
+    // column itself (for any reflow that changes its width independently)
+    const ro = new ResizeObserver(update);
+    ro.observe(wrapper);
+    if (firstTh) ro.observe(firstTh);
+
+    update();
+  },
+
+  initAllTableScrollFades() {
+    document.querySelectorAll(".table-wrapper").forEach((wrapper) => {
+      this.initTableScrollFade(wrapper);
+    });
+  },
+
   // ===== PRIVATE HELPERS =====
   _getEmptyState(colspan, title, subtitle, iconType = "calendar") {
     const icons = {

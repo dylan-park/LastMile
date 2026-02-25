@@ -749,6 +749,9 @@ document.addEventListener("DOMContentLoaded", () => {
     sortTable("maintenance", field, direction),
   );
 
+  // Mobile table scroll fades
+  UI.initAllTableScrollFades();
+
   // Cell editing
   UI.onCellEdit("shifts", handleShiftCellEdit);
   UI.onCellEdit("maintenance", handleMaintenanceCellEdit);
