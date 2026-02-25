@@ -1,6 +1,7 @@
 target/
 .vscode/
 data/
+data_e2e/
 *.surql
 venv/
 *.pytest_cache/

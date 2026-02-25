@@ -281,8 +281,6 @@ cargo run --release -- --e2e
     - [ ] Improve table view
   - [ ] Investigate desktop site improvements
     - [ ] Improve table scrolling
-- [ ] Improve tests
-  - [ ] Make E2E tests preserve original database
 
 ## License
 

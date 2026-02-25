@@ -113,7 +113,8 @@ async fn main() {
     let is_e2e = args.contains(&"--e2e".to_string());
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
-    let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "./data".to_string());
+    let default_db_path = if is_e2e { "./data_e2e" } else { "./data" };
+    let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| default_db_path.to_string());
 
     // Initialize Database Provider
     let db_provider = if is_demo {
