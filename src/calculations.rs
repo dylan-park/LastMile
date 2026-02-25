@@ -12,8 +12,8 @@ pub fn calculate_hours(start_time: DateTime<Utc>, end_time: DateTime<Utc>) -> De
     hours.round_dp(2)
 }
 
-pub fn calculate_day_total(earnings: &Decimal, tips: &Decimal, gas_cost: &Decimal) -> Decimal {
-    (earnings + tips - gas_cost).round_dp(2)
+pub fn calculate_day_total(fare: &Decimal, tips: &Decimal, gas_cost: &Decimal) -> Decimal {
+    (fare + tips - gas_cost).round_dp(2)
 }
 
 pub fn calculate_hourly_pay(day_total: &Decimal, hours_worked: &Decimal) -> Option<Decimal> {
@@ -108,41 +108,41 @@ mod tests {
 
     #[test]
     fn test_calculate_day_total() {
-        let earnings = dec!(100.0);
+        let fare = dec!(100.0);
         let tips = dec!(20.0);
         let gas_cost = dec!(15.0);
 
-        let total = calculate_day_total(&earnings, &tips, &gas_cost);
+        let total = calculate_day_total(&fare, &tips, &gas_cost);
         assert_eq!(total, dec!(105.0));
     }
 
     #[test]
     fn test_calculate_day_total_zero_gas() {
-        let earnings = dec!(100.0);
+        let fare = dec!(100.0);
         let tips = dec!(20.0);
         let gas_cost = dec!(0.0);
 
-        let total = calculate_day_total(&earnings, &tips, &gas_cost);
+        let total = calculate_day_total(&fare, &tips, &gas_cost);
         assert_eq!(total, dec!(120.0));
     }
 
     #[test]
     fn test_calculate_day_total_high_gas_cost() {
-        let earnings = dec!(100.0);
+        let fare = dec!(100.0);
         let tips = dec!(20.0);
         let gas_cost = dec!(80.0);
 
-        let total = calculate_day_total(&earnings, &tips, &gas_cost);
+        let total = calculate_day_total(&fare, &tips, &gas_cost);
         assert_eq!(total, dec!(40.0));
     }
 
     #[test]
     fn test_calculate_day_total_exceeds_earnings() {
-        let earnings = dec!(50.0);
+        let fare = dec!(50.0);
         let tips = dec!(10.0);
         let gas_cost = dec!(80.0);
 
-        let total = calculate_day_total(&earnings, &tips, &gas_cost);
+        let total = calculate_day_total(&fare, &tips, &gas_cost);
         assert_eq!(total, dec!(-20.0));
     }
 

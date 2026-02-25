@@ -132,9 +132,11 @@ def test_switch_to_maintenance_view(driver):
 
     # Wait for view to switch
     WebDriverWait(driver, 5).until(
-        lambda d: "active"
-        in d.find_element(By.CSS_SELECTOR, '[data-view="maintenance"]').get_attribute(
-            "class"
+        lambda d: (
+            "active"
+            in d.find_element(
+                By.CSS_SELECTOR, '[data-view="maintenance"]'
+            ).get_attribute("class")
         )
     )
 
@@ -179,8 +181,12 @@ def test_stats_period_toggle(driver):
 
     # Wait for active state to change
     WebDriverWait(driver, 5).until(
-        lambda d: "active"
-        in d.find_element(By.CSS_SELECTOR, '[data-period="all"]').get_attribute("class")
+        lambda d: (
+            "active"
+            in d.find_element(By.CSS_SELECTOR, '[data-period="all"]').get_attribute(
+                "class"
+            )
+        )
     )
 
     # Check that "This Month" is no longer active
@@ -201,8 +207,10 @@ def test_custom_date_range_shows(driver):
 
     # Wait for the container to become visible
     WebDriverWait(driver, 5).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "customDateRange").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "customDateRange").get_attribute("class")
+        )
     )
 
     # Now wait for the actual inputs to be visible
@@ -244,9 +252,10 @@ def test_custom_date_range_defaults(driver):
     # Verify it looks like a week (approx 6 days diff)
     # This is a loose check to avoid timezone flake, but ensures logic ran
     from datetime import datetime
+
     s = datetime.strptime(start_val, "%Y-%m-%d")
     e = datetime.strptime(end_val, "%Y-%m-%d")
-    
+
     delta = (e - s).days
     assert delta == 6, f"Expected 6 days difference (Mon-Sun), got {delta}"
 
@@ -291,8 +300,10 @@ def test_start_shift_basic(driver):
 
     # Wait for banner to be visible
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Wait for correct text to appear
@@ -343,8 +354,10 @@ def test_cannot_start_two_shifts(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # The start shift section should be hidden now
@@ -365,8 +378,10 @@ def test_end_shift_opens_modal(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -393,8 +408,10 @@ def test_end_shift_complete_workflow(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -403,14 +420,15 @@ def test_end_shift_complete_workflow(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("120.50")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("120.50")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("25.00")
     driver.find_element(By.ID, "gasCost").clear()
@@ -422,8 +440,9 @@ def test_end_shift_complete_workflow(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Wait for shift to appear in table
@@ -446,16 +465,19 @@ def test_end_shift_validation_odometer(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Open end shift modal
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Try to end with lower odometer
@@ -479,16 +501,19 @@ def test_modal_cancel_closes(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Open modal
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Click cancel
@@ -496,8 +521,9 @@ def test_modal_cancel_closes(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
 
@@ -511,15 +537,18 @@ def test_search_shifts(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
@@ -528,8 +557,9 @@ def test_search_shifts(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)  # Wait for table to update
@@ -561,23 +591,28 @@ def test_table_sorting(driver):
         driver.find_element(By.ID, "startShiftBtn").click()
 
         WebDriverWait(driver, 10).until(
-            lambda d: "hidden"
-            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+            lambda d: (
+                "hidden"
+                not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+            )
         )
 
         driver.find_element(By.ID, "endShiftBtn").click()
 
         WebDriverWait(driver, 5).until(
-            lambda d: "show"
-            in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            lambda d: (
+                "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            )
         )
 
         driver.find_element(By.ID, "endOdo").send_keys(str(int(odo) + 100))
         driver.find_element(By.ID, "modalSubmit").click()
 
         WebDriverWait(driver, 10).until(
-            lambda d: "show"
-            not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            lambda d: (
+                "show"
+                not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            )
         )
 
         time.sleep(2)
@@ -601,23 +636,27 @@ def test_delete_shift(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -676,8 +715,10 @@ def test_add_maintenance_item(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     # Wait for item to appear in table
@@ -708,8 +749,9 @@ def test_maintenance_search(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("Tire Rotation")
@@ -717,8 +759,10 @@ def test_maintenance_search(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -750,8 +794,9 @@ def test_maintenance_delete(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("Test Item")
@@ -759,8 +804,10 @@ def test_maintenance_delete(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -797,8 +844,9 @@ def test_maintenance_required_badge(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     # Create maintenance item with last service at 10000, interval 100
@@ -809,8 +857,10 @@ def test_maintenance_required_badge(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     # Switch back to shifts
@@ -825,23 +875,27 @@ def test_maintenance_required_badge(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10200")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(3)  # Wait for maintenance calculation
@@ -879,8 +933,9 @@ def test_maintenance_toggle_enabled(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("Toggle Test")
@@ -888,8 +943,10 @@ def test_maintenance_toggle_enabled(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -925,27 +982,31 @@ def test_stats_update_after_shift(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("100.00")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("100.00")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("20.00")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -966,25 +1027,29 @@ def test_stats_all_time_vs_month(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("100.00")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("100.00")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -1030,8 +1095,10 @@ def test_csv_export_all_time(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -1040,14 +1107,15 @@ def test_csv_export_all_time(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("100")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("100")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("20")
     driver.find_element(By.ID, "gasCost").clear()
@@ -1059,8 +1127,9 @@ def test_csv_export_all_time(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
     time.sleep(1)
 
@@ -1080,7 +1149,7 @@ def test_csv_export_all_time(driver):
     # Verify header
     assert "ID,Start Time,End Time" in lines[0]
     assert "Odometer Start,Odometer End" in lines[0]
-    assert "Earnings,Tips,Gas Cost" in lines[0]
+    assert "Fare,Tips,Gas Cost" in lines[0]
 
     # Verify our test shift is in the CSV
     assert "Test shift for CSV" in csv_content
@@ -1101,8 +1170,10 @@ def test_csv_export_month_view(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -1111,14 +1182,15 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("11100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("50")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("50")
     driver.find_element(By.ID, "notes").send_keys("In-range shift")
 
     # Submit
@@ -1126,8 +1198,9 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
     time.sleep(1)
 
@@ -1139,8 +1212,10 @@ def test_csv_export_month_view(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -1149,14 +1224,15 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("11200")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("75")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("75")
     driver.find_element(By.ID, "notes").send_keys("Out-of-range shift")
 
     # Submit
@@ -1164,8 +1240,9 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
     time.sleep(2)
 
@@ -1178,8 +1255,9 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Calculate a date 2 months ago
@@ -1201,8 +1279,10 @@ def test_csv_export_month_view(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
     time.sleep(1)
 
@@ -1247,8 +1327,10 @@ def test_csv_export_custom_range(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -1257,14 +1339,15 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("12100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("75")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("75")
     driver.find_element(By.ID, "notes").send_keys("In 7-day range")
 
     # Submit
@@ -1272,8 +1355,9 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
     time.sleep(1)
 
@@ -1285,8 +1369,10 @@ def test_csv_export_custom_range(driver):
 
     # Wait for active shift banner
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Click End Shift button
@@ -1295,14 +1381,15 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Fill in end shift data
     driver.find_element(By.ID, "endOdo").send_keys("12200")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("90")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("90")
     driver.find_element(By.ID, "notes").send_keys("Outside 7-day range")
 
     # Submit
@@ -1310,8 +1397,9 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
     time.sleep(2)
 
@@ -1324,8 +1412,9 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Calculate a date 30 days ago (outside the 7-day range we'll test)
@@ -1347,8 +1436,10 @@ def test_csv_export_custom_range(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
     time.sleep(1)
 
@@ -1444,23 +1535,27 @@ def test_search_no_results(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -1492,8 +1587,9 @@ def test_maintenance_validation_positive_interval(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("Invalid Item")
@@ -1517,15 +1613,18 @@ def test_notes_field_optional(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
@@ -1534,8 +1633,9 @@ def test_notes_field_optional(driver):
 
     # Should succeed
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
 
@@ -1549,8 +1649,10 @@ def test_enter_key_starts_shift(driver):
 
     # Wait for banner to become visible
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Wait for text to update
@@ -1578,25 +1680,30 @@ def test_multiple_shifts_display(driver):
         driver.find_element(By.ID, "startShiftBtn").click()
 
         WebDriverWait(driver, 10).until(
-            lambda d: "hidden"
-            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+            lambda d: (
+                "hidden"
+                not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+            )
         )
 
         driver.find_element(By.ID, "endShiftBtn").click()
 
         WebDriverWait(driver, 5).until(
-            lambda d: "show"
-            in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            lambda d: (
+                "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            )
         )
 
         driver.find_element(By.ID, "endOdo").send_keys(str(int(odo) + 100))
-        driver.find_element(By.ID, "earnings").clear()
-        driver.find_element(By.ID, "earnings").send_keys(str((i + 1) * 50))
+        driver.find_element(By.ID, "fare").clear()
+        driver.find_element(By.ID, "fare").send_keys(str((i + 1) * 50))
         driver.find_element(By.ID, "modalSubmit").click()
 
         WebDriverWait(driver, 10).until(
-            lambda d: "show"
-            not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            lambda d: (
+                "show"
+                not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+            )
         )
 
         time.sleep(2)
@@ -1625,16 +1732,19 @@ def test_modal_close_button_works(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Open modal
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # Click X button
@@ -1642,8 +1752,9 @@ def test_modal_close_button_works(driver):
 
     # Modal should close
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
 
@@ -1663,16 +1774,19 @@ def test_maintenance_modal_close(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     # Close with X button
     driver.find_element(By.ID, "maintenanceModalClose").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
 
@@ -1696,8 +1810,9 @@ def test_complete_workflow_with_maintenance(driver):
     driver.find_element(By.ID, "addMaintenanceBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("5000mi Service")
@@ -1707,8 +1822,10 @@ def test_complete_workflow_with_maintenance(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -1724,23 +1841,27 @@ def test_complete_workflow_with_maintenance(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("5100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(3)
@@ -1760,8 +1881,12 @@ def test_complete_workflow_with_maintenance(driver):
 
     # Check for maintenance-required class
     WebDriverWait(driver, 10).until(
-        lambda d: "maintenance-required"
-        in d.find_element(By.CSS_SELECTOR, "#maintenanceBody tr").get_attribute("class")
+        lambda d: (
+            "maintenance-required"
+            in d.find_element(By.CSS_SELECTOR, "#maintenanceBody tr").get_attribute(
+                "class"
+            )
+        )
     )
 
 
@@ -1778,8 +1903,9 @@ def test_remaining_mileage_updates_dynamically(driver):
 
     driver.find_element(By.ID, "addMaintenanceBtn").click()
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "maintenanceName").send_keys("Dynamic Test")
@@ -1789,8 +1915,10 @@ def test_remaining_mileage_updates_dynamically(driver):
     driver.find_element(By.ID, "maintenanceModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "maintenanceModal").get_attribute("class")
+        )
     )
 
     # Initial state: No shifts, so remaining should be 5000 (interval)
@@ -1808,22 +1936,26 @@ def test_remaining_mileage_updates_dynamically(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("13000")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     # 3. Check maintenance view again - should be updated
@@ -1877,8 +2009,10 @@ def test_stats_calculation_accuracy(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     # Wait a bit to have measurable hours
@@ -1887,14 +2021,15 @@ def test_stats_calculation_accuracy(driver):
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
-    # Earnings: 100, Tips: 20, Gas: 15 = Total: 105
+    # Fare: 100, Tips: 20, Gas: 15 = Total: 105
     driver.find_element(By.ID, "endOdo").send_keys("10050")  # 50 miles
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("100.00")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("100.00")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("20.00")
     driver.find_element(By.ID, "gasCost").clear()
@@ -1902,8 +2037,9 @@ def test_stats_calculation_accuracy(driver):
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -1931,20 +2067,23 @@ def test_edit_shift_start_time_happy_path(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("100")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("100")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("20")
     driver.find_element(By.ID, "gasCost").clear()
@@ -1952,8 +2091,9 @@ def test_edit_shift_start_time_happy_path(driver):
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)  # Wait for table to update
@@ -1998,8 +2138,10 @@ def test_edit_shift_start_time_happy_path(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)  # Wait for table to update
@@ -2022,25 +2164,29 @@ def test_edit_shift_end_time_happy_path(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("80")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("80")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2054,8 +2200,9 @@ def test_edit_shift_end_time_happy_path(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Verify modal title
@@ -2081,8 +2228,10 @@ def test_edit_shift_end_time_happy_path(driver):
     driver.find_element(By.ID, "datetimeModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2105,20 +2254,23 @@ def test_edit_both_times_and_verify_recalculation(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
-    driver.find_element(By.ID, "earnings").clear()
-    driver.find_element(By.ID, "earnings").send_keys("120")
+    driver.find_element(By.ID, "fare").clear()
+    driver.find_element(By.ID, "fare").send_keys("120")
     driver.find_element(By.ID, "tips").clear()
     driver.find_element(By.ID, "tips").send_keys("30")
     driver.find_element(By.ID, "gasCost").clear()
@@ -2126,8 +2278,9 @@ def test_edit_both_times_and_verify_recalculation(driver):
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2143,8 +2296,9 @@ def test_edit_both_times_and_verify_recalculation(driver):
     start_time_cell.click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     datetime_input = driver.find_element(By.ID, "datetimeInput")
@@ -2165,8 +2319,10 @@ def test_edit_both_times_and_verify_recalculation(driver):
     driver.find_element(By.ID, "datetimeModalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2188,23 +2344,27 @@ def test_edit_end_time_before_start_time_validation(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2216,8 +2376,9 @@ def test_edit_end_time_before_start_time_validation(driver):
     end_time_cell.click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Try to set end time to 2 hours BEFORE current time (should fail validation)
@@ -2266,23 +2427,27 @@ def test_edit_start_time_after_end_time_validation(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2294,8 +2459,9 @@ def test_edit_start_time_after_end_time_validation(driver):
     start_time_cell.click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Try to set start time to way in the future (after end time)
@@ -2342,23 +2508,27 @@ def test_datetime_modal_cancel_closes(driver):
     driver.find_element(By.ID, "startShiftBtn").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "hidden"
-        not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        lambda d: (
+            "hidden"
+            not in d.find_element(By.ID, "activeShiftBanner").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endShiftBtn").click()
 
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     driver.find_element(By.ID, "endOdo").send_keys("10100")
     driver.find_element(By.ID, "modalSubmit").click()
 
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        lambda d: (
+            "show" not in d.find_element(By.ID, "endShiftModal").get_attribute("class")
+        )
     )
 
     time.sleep(2)
@@ -2372,8 +2542,9 @@ def test_datetime_modal_cancel_closes(driver):
 
     # Wait for modal
     WebDriverWait(driver, 5).until(
-        lambda d: "show"
-        in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show" in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     # Modify the value but cancel
@@ -2398,8 +2569,10 @@ def test_datetime_modal_cancel_closes(driver):
 
     # Wait for modal to close
     WebDriverWait(driver, 10).until(
-        lambda d: "show"
-        not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        lambda d: (
+            "show"
+            not in d.find_element(By.ID, "editDatetimeModal").get_attribute("class")
+        )
     )
 
     time.sleep(1)

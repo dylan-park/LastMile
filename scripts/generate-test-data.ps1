@@ -75,8 +75,8 @@ function New-ShiftData {
     $odometerStart = $currentOdometer
     $odometerEnd = $odometerStart + $milesDriven
 
-    # Earnings ($30-$60)
-    $earnings = [math]::Round((Get-Random -Minimum 3000 -Maximum 6000) / 100, 2)
+    # Fare ($30-$60)
+    $fare = [math]::Round((Get-Random -Minimum 3000 -Maximum 6000) / 100, 2)
 
     # Tips ($35-$85)
     $tips = [math]::Round((Get-Random -Minimum 3500 -Maximum 8500) / 100, 2)
@@ -86,7 +86,7 @@ function New-ShiftData {
     $gasCost = [math]::Round($milesDriven * $gasPerMile, 2)
 
     # Calculate day_total and hourly_pay
-    $dayTotal = [math]::Round($earnings + $tips - $gasCost, 2)
+    $dayTotal = [math]::Round($fare + $tips - $gasCost, 2)
     $hourlyPay = [math]::Round($dayTotal / $hoursWorked, 2)
 
     # Format times for SurrealDB
@@ -96,7 +96,7 @@ function New-ShiftData {
     return @{
         id = Get-RandomId
         day_total = "${dayTotal}dec"
-        earnings = "${earnings}dec"
+        fare = "${fare}dec"
         end_time = "d'$endTimeStr'"
         gas_cost = "${gasCost}dec"
         hourly_pay = "${hourlyPay}dec"
@@ -134,7 +134,7 @@ foreach ($shift in $shifts) {
     $shiftObj = @"
     {
         day_total: $($shift.day_total),
-        earnings: $($shift.earnings),
+        fare: $($shift.fare),
         end_time: $($shift.end_time),
         gas_cost: $($shift.gas_cost),
         hourly_pay: $($shift.hourly_pay),

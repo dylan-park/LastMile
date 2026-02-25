@@ -30,7 +30,7 @@ async fn test_start_shift() {
 
     let shift = result.unwrap().0;
     assert_eq!(shift.odometer_start, 12345);
-    assert_eq!(shift.earnings, dec!(0.0));
+    assert_eq!(shift.fare, dec!(0.0));
     assert_eq!(shift.tips, dec!(0.0));
     assert_eq!(shift.gas_cost, dec!(0.0));
     assert_eq!(shift.day_total, dec!(0.0));
@@ -96,7 +96,7 @@ async fn test_end_shift() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12445,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: Some(dec!(20.0)),
         gas_cost: Some(dec!(15.0)),
         notes: Some("Good shift".to_string()),
@@ -114,7 +114,7 @@ async fn test_end_shift() {
     let ended_shift = result.unwrap().0;
     print!("{:?}", ended_shift);
     assert_eq!(ended_shift.odometer_end, Some(12445));
-    assert_eq!(ended_shift.earnings, dec!(100.0));
+    assert_eq!(ended_shift.fare, dec!(100.0));
     assert_eq!(ended_shift.tips, dec!(20.0));
     assert_eq!(ended_shift.gas_cost, dec!(15.0));
     assert_eq!(ended_shift.day_total, dec!(105.0));
@@ -149,7 +149,7 @@ async fn test_end_shift_invalid_odometer() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12345,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -227,7 +227,7 @@ async fn test_update_shift() {
     let update_request = UpdateShiftRequest {
         odometer_start: Some(12350),
         odometer_end: Some(12450),
-        earnings: Some(dec!(150.0)),
+        fare: Some(dec!(150.0)),
         tips: Some(dec!(30.0)),
         gas_cost: Some(dec!(20.0)),
         notes: Some(Some("Updated".to_string())),
@@ -247,7 +247,7 @@ async fn test_update_shift() {
     let updated = result.unwrap().0;
     assert_eq!(updated.odometer_start, 12350);
     assert_eq!(updated.odometer_end, Some(12450));
-    assert_eq!(updated.earnings, dec!(150.0));
+    assert_eq!(updated.fare, dec!(150.0));
     assert_eq!(updated.tips, dec!(30.0));
     assert_eq!(updated.gas_cost, dec!(20.0));
     assert_eq!(updated.day_total, dec!(160.0));
@@ -280,7 +280,7 @@ async fn test_delete_shift() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12445,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: Some(dec!(20.0)),
         gas_cost: Some(dec!(15.0)),
         notes: Some("Good shift".to_string()),
@@ -493,7 +493,7 @@ async fn test_calculate_required_maintenance_none_required() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12500,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -550,7 +550,7 @@ async fn test_calculate_required_maintenance_required() {
 
     let end_request = EndShiftRequest {
         odometer_end: 13500,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -608,7 +608,7 @@ async fn test_calculate_required_maintenance_disabled_item() {
 
     let end_request = EndShiftRequest {
         odometer_end: 13500,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -652,7 +652,7 @@ async fn test_create_maintenance_item_with_existing_shift() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12000,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -709,7 +709,7 @@ async fn test_update_maintenance_item_recalculates_remaining_mileage() {
 
     let end_request = EndShiftRequest {
         odometer_end: 11000,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -815,7 +815,7 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
 
     let end_request = EndShiftRequest {
         odometer_end: 12500,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -878,7 +878,7 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
 
     let end_request = EndShiftRequest {
         odometer_end: 9000,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: None,
         gas_cost: None,
         notes: None,
@@ -899,7 +899,7 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: Some(9500),
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -947,7 +947,7 @@ async fn test_update_shift_start_time() {
     // End the shift
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(50.0)),
+        fare: Some(dec!(50.0)),
         tips: Some(dec!(10.0)),
         gas_cost: Some(dec!(5.0)),
         notes: None,
@@ -969,7 +969,7 @@ async fn test_update_shift_start_time() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1020,7 +1020,7 @@ async fn test_update_shift_end_time() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(60.0)),
+        fare: Some(dec!(60.0)),
         tips: Some(dec!(10.0)),
         gas_cost: Some(dec!(5.0)),
         notes: None,
@@ -1043,7 +1043,7 @@ async fn test_update_shift_end_time() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1099,7 +1099,7 @@ async fn test_update_shift_both_times() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: Some(dec!(20.0)),
         gas_cost: Some(dec!(10.0)),
         notes: None,
@@ -1120,7 +1120,7 @@ async fn test_update_shift_both_times() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1176,7 +1176,7 @@ async fn test_update_shift_invalid_end_before_start() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(50.0)),
+        fare: Some(dec!(50.0)),
         tips: Some(dec!(10.0)),
         gas_cost: Some(dec!(5.0)),
         notes: None,
@@ -1197,7 +1197,7 @@ async fn test_update_shift_invalid_end_before_start() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1242,7 +1242,7 @@ async fn test_update_shift_invalid_start_after_end() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(50.0)),
+        fare: Some(dec!(50.0)),
         tips: Some(dec!(10.0)),
         gas_cost: Some(dec!(5.0)),
         notes: None,
@@ -1263,7 +1263,7 @@ async fn test_update_shift_invalid_start_after_end() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1310,7 +1310,7 @@ async fn test_update_shift_invalid_datetime_format() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1356,7 +1356,7 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(120.0)),
+        fare: Some(dec!(120.0)),
         tips: Some(dec!(30.0)),
         gas_cost: Some(dec!(10.0)),
         notes: None,
@@ -1376,7 +1376,7 @@ async fn test_update_shift_time_recalculates_hourly_pay() {
     let update_request = UpdateShiftRequest {
         odometer_start: None,
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1431,7 +1431,7 @@ async fn test_export_csv_all_shifts() {
 
         let end_request = EndShiftRequest {
             odometer_end: 10100 + (i * 100),
-            earnings: Some(dec!(100.0)),
+            fare: Some(dec!(100.0)),
             tips: Some(dec!(20.0)),
             gas_cost: Some(dec!(15.0)),
             notes: Some(format!("Shift {}", i)),
@@ -1471,7 +1471,7 @@ async fn test_export_csv_all_shifts() {
     assert!(lines[0].contains("ID,Start Time,End Time"));
     assert!(lines[0].contains("Hours Worked"));
     assert!(lines[0].contains("Odometer Start,Odometer End"));
-    assert!(lines[0].contains("Earnings,Tips,Gas Cost"));
+    assert!(lines[0].contains("Fare,Tips,Gas Cost"));
 
     // Verify each shift is in the CSV
     assert!(csv.contains("Shift 0"));
@@ -1479,7 +1479,7 @@ async fn test_export_csv_all_shifts() {
     assert!(csv.contains("Shift 2"));
 
     // Verify monetary values are present
-    assert!(csv.contains("100")); // earnings
+    assert!(csv.contains("100")); // fare
     assert!(csv.contains("20")); // tips
     assert!(csv.contains("15")); // gas cost
     assert!(csv.contains("105")); // day total (100 + 20 - 15)
@@ -1518,7 +1518,7 @@ async fn test_export_csv_with_date_range() {
     // End shift1 first
     let end_request1 = EndShiftRequest {
         odometer_end: 10100,
-        earnings: Some(dec!(50.0)),
+        fare: Some(dec!(50.0)),
         tips: None,
         gas_cost: None,
         notes: Some("Old shift".to_string()),
@@ -1536,7 +1536,7 @@ async fn test_export_csv_with_date_range() {
     let update1 = UpdateShiftRequest {
         start_time: Some(old_start),
         odometer_end: None,
-        earnings: None,
+        fare: None,
         tips: None,
         gas_cost: None,
         notes: None,
@@ -1567,7 +1567,7 @@ async fn test_export_csv_with_date_range() {
 
     let end_request = EndShiftRequest {
         odometer_end: 10200,
-        earnings: Some(dec!(100.0)),
+        fare: Some(dec!(100.0)),
         tips: Some(dec!(20.0)),
         gas_cost: Some(dec!(15.0)),
         notes: Some("Recent shift".to_string()),
@@ -1614,7 +1614,7 @@ async fn test_export_csv_with_date_range() {
     // Verify the recent shift's data
     assert!(csv.contains("10100")); // odometer start
     assert!(csv.contains("10200")); // odometer end
-    assert!(csv.contains("100")); // earnings
+    assert!(csv.contains("100")); // fare
 }
 
 #[tokio::test]
@@ -1657,7 +1657,7 @@ async fn test_export_csv_empty_database() {
 
     // Verify no data rows
     assert!(!csv.contains("10000")); // No odometer readings
-    assert!(!csv.contains("100.0")); // No earnings
+    assert!(!csv.contains("100.0")); // No fare
 }
 
 #[tokio::test]

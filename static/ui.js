@@ -110,7 +110,7 @@ const UI = {
                 <td contenteditable="true" data-field="odometer_start" data-id="${shift.id}">${shift.odometer_start}</td>
                 <td contenteditable="true" data-field="odometer_end" data-id="${shift.id}">${shift.odometer_end || ""}</td>
                 <td class="calculated">${shift.miles_driven || ""}</td>
-                <td class="money editable-money" contenteditable="true" data-field="earnings" data-id="${shift.id}">${formatMoney(shift.earnings)}</td>
+                <td class="money editable-money" contenteditable="true" data-field="fare" data-id="${shift.id}">${formatMoney(shift.fare)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="tips" data-id="${shift.id}">${formatMoney(shift.tips)}</td>
                 <td class="money editable-money" contenteditable="true" data-field="gas_cost" data-id="${shift.id}">${formatMoney(shift.gas_cost)}</td>
                 <td class="money calculated">$${formatMoney(shift.day_total)}</td>
@@ -200,7 +200,7 @@ const UI = {
     // Clear form fields based on modal type
     if (modalId === "endShiftModal") {
       document.getElementById("endOdo").value = "";
-      document.getElementById("earnings").value = "0";
+      document.getElementById("fare").value = "0";
       document.getElementById("tips").value = "0";
       document.getElementById("gasCost").value = "0";
       document.getElementById("notes").value = "";
