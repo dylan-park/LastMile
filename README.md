@@ -283,7 +283,6 @@ cargo run --release -- --e2e
     - [ ] Improve table scrolling
 - [ ] Improve tests
   - [ ] Make E2E tests preserve original database
-  - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
 
 ## License
 

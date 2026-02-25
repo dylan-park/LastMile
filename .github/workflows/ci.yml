@@ -118,7 +118,7 @@ jobs:
 
       # Run the frontend e2e tests
       - name: Run Frontend Tests
-        run: pytest scripts/e2e.py -v
+        run: pytest scripts/e2e.py -v --log-cli-level=INFO --log-file=e2e.log --log-file-level=INFO
 
       # Upload logs on failure
       - name: Upload Logs on Failure
