@@ -26,25 +26,35 @@ pub async fn teardown_all_data(
     );
     let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
-    // Delete all shifts
-    let shifts_query = "DELETE shifts;";
-    let mut shifts_result = db.query(shifts_query).await?;
-    let shifts_deleted: Vec<serde_json::Value> = shifts_result.take(0)?;
+    // Count then delete shifts
+    let mut shifts_count_result = db.query("SELECT count() FROM shifts GROUP ALL").await?;
+    let shifts_counts: Vec<serde_json::Value> = shifts_count_result.take(0)?;
+    let shifts_deleted = shifts_counts
+        .first()
+        .and_then(|v| v.get("count"))
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
+    db.query("DELETE shifts").await?;
 
-    // Delete all maintenance items
-    let maintenance_query = "DELETE maintenance;";
-    let mut maintenance_result = db.query(maintenance_query).await?;
-    let maintenance_deleted: Vec<serde_json::Value> = maintenance_result.take(0)?;
+    // Count then delete maintenance items
+    let mut maintenance_count_result = db
+        .query("SELECT count() FROM maintenance GROUP ALL")
+        .await?;
+    let maintenance_counts: Vec<serde_json::Value> = maintenance_count_result.take(0)?;
+    let maintenance_deleted = maintenance_counts
+        .first()
+        .and_then(|v| v.get("count"))
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
 
     info!(
         "TEARDOWN: Deleted {} shifts and {} maintenance items",
-        shifts_deleted.len(),
-        maintenance_deleted.len()
+        shifts_deleted, maintenance_deleted
     );
 
     Ok(Json(TeardownResponse {
         message: "All data cleared successfully".to_string(),
-        shifts_deleted: shifts_deleted.len(),
-        maintenance_deleted: maintenance_deleted.len(),
+        shifts_deleted,
+        maintenance_deleted,
     }))
 }
