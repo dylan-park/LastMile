@@ -3,7 +3,7 @@ use axum::extract::{Extension, Path, Query};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 
-use lastmile::db::helpers::get_maitenance_item_by_id;
+use lastmile::db::helpers::get_maintenance_item_by_id;
 use lastmile::handlers::maintenance::*;
 use lastmile::handlers::shifts::*;
 use lastmile::middleware::SessionId;
@@ -830,7 +830,7 @@ async fn test_end_shift_updates_maintenance_remaining_mileage() {
 
     // Fetch the maintenance item again
     // New remaining: 3000 - (12500 - 10000) = 500
-    let updated_item = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
+    let updated_item = get_maintenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(updated_item.remaining_mileage, 500);
 }
 
@@ -892,7 +892,7 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     .await;
 
     // Check initial remaining: 5000 - (9000 - 5000) = 1000
-    let item_after_shift = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
+    let item_after_shift = get_maintenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(item_after_shift.remaining_mileage, 1000);
 
     // Update shift odometer_end to 9500
@@ -916,7 +916,7 @@ async fn test_update_shift_odometer_updates_maintenance_remaining_mileage() {
     .await;
 
     // Check updated remaining: 5000 - (9500 - 5000) = 500
-    let item_after_update = get_maitenance_item_by_id(&db, &item_id).await.unwrap();
+    let item_after_update = get_maintenance_item_by_id(&db, &item_id).await.unwrap();
     assert_eq!(item_after_update.remaining_mileage, 500);
 }
 

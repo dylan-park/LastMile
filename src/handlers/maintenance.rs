@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::{
     calculations::{calculate_is_maintenance_required, calculate_remaining_mileage},
-    db::helpers::{get_maitenance_item_by_id, query_maitenance_items, query_shifts},
+    db::helpers::{get_maintenance_item_by_id, query_maintenance_items, query_shifts},
     error::{AppError, Result},
     models::{
         CreateMaintenanceItemRequest, MaintenanceItem, MaintenanceItemRecord,
@@ -26,7 +26,7 @@ pub async fn get_all_maintenance_items(
     info!("Fetching all maintenance items for session {}", session.0);
     let db = state.db_provider.get_db(Some(&session.0)).await?;
 
-    let maintenance_items = query_maitenance_items(&db, "SELECT * FROM maintenance").await?;
+    let maintenance_items = query_maintenance_items(&db, "SELECT * FROM maintenance").await?;
 
     info!("Retrieved {} maintenance items", maintenance_items.len());
     Ok(Json(maintenance_items))
@@ -91,7 +91,7 @@ pub async fn update_maintenance_item(
     info!("Updating maintenance item: id={}", id);
     let db = state.db_provider.get_db(Some(&session.0)).await?;
 
-    let maintenance_item = get_maitenance_item_by_id(&db, &id).await?;
+    let maintenance_item = get_maintenance_item_by_id(&db, &id).await?;
 
     // Merge updates with existing values
     let name = payload.name.unwrap_or(maintenance_item.name);
@@ -190,7 +190,7 @@ pub async fn calculate_required_maintenance(
     };
 
     let maintenance_items =
-        query_maitenance_items(&db, "SELECT * FROM maintenance WHERE enabled = true;").await?;
+        query_maintenance_items(&db, "SELECT * FROM maintenance WHERE enabled = true;").await?;
 
     let required_maintenance_items: Vec<_> = maintenance_items
         .into_iter()

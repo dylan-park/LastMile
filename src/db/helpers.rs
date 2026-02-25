@@ -30,7 +30,10 @@ pub async fn query_shifts_with_date_range(
     Ok(shifts)
 }
 
-pub async fn query_maitenance_items(db: &Surreal<Db>, query: &str) -> Result<Vec<MaintenanceItem>> {
+pub async fn query_maintenance_items(
+    db: &Surreal<Db>,
+    query: &str,
+) -> Result<Vec<MaintenanceItem>> {
     let mut result = db.query(query).await?;
     let maintenance_items: Vec<MaintenanceItem> = result.take(0)?;
     Ok(maintenance_items)
@@ -46,7 +49,7 @@ pub async fn get_shift_by_id(db: &Surreal<Db>, id: &str) -> Result<Shift> {
     shift.ok_or(AppError::ShiftNotFound)
 }
 
-pub async fn get_maitenance_item_by_id(db: &Surreal<Db>, id: &str) -> Result<MaintenanceItem> {
+pub async fn get_maintenance_item_by_id(db: &Surreal<Db>, id: &str) -> Result<MaintenanceItem> {
     let maintenance_item: Option<MaintenanceItem> = db.select(("maintenance", id)).await?;
     maintenance_item.ok_or(AppError::MaintenanceItemNotFound)
 }
@@ -59,7 +62,7 @@ pub async fn update_all_maintenance_remaining_mileage(
 ) -> Result<()> {
     info!("Updating remaining mileage for all maintenance items");
 
-    let maintenance_items = query_maitenance_items(db, "SELECT * FROM maintenance").await?;
+    let maintenance_items = query_maintenance_items(db, "SELECT * FROM maintenance").await?;
 
     for item in maintenance_items {
         let remaining_mileage = calculate_remaining_mileage(

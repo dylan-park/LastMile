@@ -202,7 +202,7 @@ async fn test_get_shift_by_id_not_found() {
 async fn test_query_maintenance_items_empty() {
     let db = common::setup_test_db().await;
 
-    let items = query_maitenance_items(&db, "SELECT * FROM maintenance")
+    let items = query_maintenance_items(&db, "SELECT * FROM maintenance")
         .await
         .unwrap();
 
@@ -224,7 +224,7 @@ async fn test_query_maintenance_items_with_data() {
 
     let _: Option<MaintenanceItem> = db.create("maintenance").content(record).await.unwrap();
 
-    let items = query_maitenance_items(&db, "SELECT * FROM maintenance")
+    let items = query_maintenance_items(&db, "SELECT * FROM maintenance")
         .await
         .unwrap();
 
@@ -250,7 +250,7 @@ async fn test_get_maintenance_item_by_id_found() {
     let created = created.unwrap();
     let id = created.id.id.to_string();
 
-    let item = get_maitenance_item_by_id(&db, &id).await.unwrap();
+    let item = get_maintenance_item_by_id(&db, &id).await.unwrap();
     assert_eq!(item.name, "Tire Rotation");
     assert_eq!(item.notes, Some("Every 5k miles".to_string()));
 }
@@ -259,7 +259,7 @@ async fn test_get_maintenance_item_by_id_found() {
 async fn test_get_maintenance_item_by_id_not_found() {
     let db = common::setup_test_db().await;
 
-    let result = get_maitenance_item_by_id(&db, "nonexistent").await;
+    let result = get_maintenance_item_by_id(&db, "nonexistent").await;
     assert!(result.is_err());
     assert!(matches!(
         result.unwrap_err(),
@@ -306,7 +306,7 @@ async fn test_update_all_maintenance_remaining_mileage_multiple_items() {
     assert!(result.is_ok());
 
     // Verify items were updated
-    let items = query_maitenance_items(&db, "SELECT * FROM maintenance ORDER BY name")
+    let items = query_maintenance_items(&db, "SELECT * FROM maintenance ORDER BY name")
         .await
         .unwrap();
     assert_eq!(items.len(), 2);
@@ -343,7 +343,7 @@ async fn test_update_all_maintenance_remaining_mileage_overdue_clamps_to_zero() 
     let result = update_all_maintenance_remaining_mileage(&db, 10000).await;
     assert!(result.is_ok());
 
-    let items = query_maitenance_items(&db, "SELECT * FROM maintenance")
+    let items = query_maintenance_items(&db, "SELECT * FROM maintenance")
         .await
         .unwrap();
     assert_eq!(items.len(), 1);
