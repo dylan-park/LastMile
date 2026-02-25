@@ -14,7 +14,7 @@ pub async fn setup_database(db: &Surreal<Db>) {
         DEFINE FIELD odometer_start ON shifts TYPE int ASSERT $value >= 0;
         DEFINE FIELD odometer_end ON shifts TYPE option<int> ASSERT $value >= 0;
         DEFINE FIELD miles_driven ON shifts TYPE option<int>;
-        DEFINE FIELD earnings ON shifts TYPE decimal DEFAULT 0.00;
+        DEFINE FIELD fare ON shifts TYPE decimal DEFAULT 0.00;
         DEFINE FIELD tips ON shifts TYPE decimal DEFAULT 0.00;
         DEFINE FIELD gas_cost ON shifts TYPE decimal DEFAULT 0.00;
         DEFINE FIELD day_total ON shifts TYPE decimal DEFAULT 0.00;

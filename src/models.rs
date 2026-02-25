@@ -69,7 +69,7 @@ pub struct Shift {
     pub odometer_end: Option<i32>,
     pub miles_driven: Option<i32>,
     #[serde(deserialize_with = "deserialize_flexible_decimal")]
-    pub earnings: Decimal,
+    pub fare: Decimal,
     #[serde(deserialize_with = "deserialize_flexible_decimal")]
     pub tips: Decimal,
     #[serde(deserialize_with = "deserialize_flexible_decimal")]
@@ -89,7 +89,7 @@ pub struct ShiftRecord {
     pub odometer_start: i32,
     pub odometer_end: Option<i32>,
     pub miles_driven: Option<i32>,
-    pub earnings: Decimal,
+    pub fare: Decimal,
     pub tips: Decimal,
     pub gas_cost: Decimal,
     pub day_total: Decimal,
@@ -112,7 +112,7 @@ pub struct ShiftUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hours_worked: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub earnings: Option<Decimal>,
+    pub fare: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tips: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -133,7 +133,7 @@ pub struct StartShiftRequest {
 #[derive(Debug, Deserialize)]
 pub struct EndShiftRequest {
     pub odometer_end: i32,
-    pub earnings: Option<Decimal>,
+    pub fare: Option<Decimal>,
     pub tips: Option<Decimal>,
     pub gas_cost: Option<Decimal>,
     pub notes: Option<String>,
@@ -145,7 +145,7 @@ pub struct UpdateShiftRequest {
     pub end_time: Option<String>,
     pub odometer_start: Option<i32>,
     pub odometer_end: Option<i32>,
-    pub earnings: Option<Decimal>,
+    pub fare: Option<Decimal>,
     pub tips: Option<Decimal>,
     pub gas_cost: Option<Decimal>,
     #[serde(default, deserialize_with = "deserialize_optional_field")]
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn test_deserialize_flexible_decimal_from_int() {
         let json_data = json!({
-            "earnings": 100,
+            "fare": 100,
             "tips": 20,
             "gas_cost": 15,
             "day_total": 105
@@ -244,7 +244,7 @@ mod tests {
         #[derive(serde::Deserialize)]
         struct TestData {
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
-            earnings: rust_decimal::Decimal,
+            fare: rust_decimal::Decimal,
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
             tips: rust_decimal::Decimal,
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
@@ -254,7 +254,7 @@ mod tests {
         }
 
         let data: TestData = serde_json::from_value(json_data).unwrap();
-        assert_eq!(data.earnings, dec!(100));
+        assert_eq!(data.fare, dec!(100));
         assert_eq!(data.tips, dec!(20));
         assert_eq!(data.gas_cost, dec!(15));
         assert_eq!(data.day_total, dec!(105));
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn test_deserialize_flexible_decimal_from_decimal() {
         let json_data = json!({
-            "earnings": 100.50,
+            "fare": 100.50,
             "tips": 20.25,
             "gas_cost": 15.75,
             "day_total": 105.00
@@ -272,7 +272,7 @@ mod tests {
         #[derive(serde::Deserialize)]
         struct TestData {
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
-            earnings: rust_decimal::Decimal,
+            fare: rust_decimal::Decimal,
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
             tips: rust_decimal::Decimal,
             #[serde(deserialize_with = "deserialize_flexible_decimal")]
@@ -282,7 +282,7 @@ mod tests {
         }
 
         let data: TestData = serde_json::from_value(json_data).unwrap();
-        assert_eq!(data.earnings, dec!(100.50));
+        assert_eq!(data.fare, dec!(100.50));
         assert_eq!(data.tips, dec!(20.25));
         assert_eq!(data.gas_cost, dec!(15.75));
         assert_eq!(data.day_total, dec!(105.00));
@@ -348,7 +348,7 @@ mod tests {
     fn test_end_shift_request_deserialization_all_fields() {
         let json_data = json!({
             "odometer_end": 12445,
-            "earnings": 100.50,
+            "fare": 100.50,
             "tips": 20.25,
             "gas_cost": 15.00,
             "notes": "Good shift"
@@ -356,7 +356,7 @@ mod tests {
 
         let request: EndShiftRequest = serde_json::from_value(json_data).unwrap();
         assert_eq!(request.odometer_end, 12445);
-        assert_eq!(request.earnings, Some(dec!(100.50)));
+        assert_eq!(request.fare, Some(dec!(100.50)));
         assert_eq!(request.tips, Some(dec!(20.25)));
         assert_eq!(request.gas_cost, Some(dec!(15.00)));
         assert_eq!(request.notes, Some("Good shift".to_string()));
@@ -370,7 +370,7 @@ mod tests {
 
         let request: EndShiftRequest = serde_json::from_value(json_data).unwrap();
         assert_eq!(request.odometer_end, 12445);
-        assert_eq!(request.earnings, None);
+        assert_eq!(request.fare, None);
         assert_eq!(request.tips, None);
         assert_eq!(request.gas_cost, None);
         assert_eq!(request.notes, None);
@@ -381,7 +381,7 @@ mod tests {
         let json_data = json!({
             "odometer_start": 12345,
             "odometer_end": 12445,
-            "earnings": 100.00,
+            "fare": 100.00,
             "tips": 20.00,
             "gas_cost": 15.00,
             "notes": "Updated notes"
@@ -390,7 +390,7 @@ mod tests {
         let request: UpdateShiftRequest = serde_json::from_value(json_data).unwrap();
         assert_eq!(request.odometer_start, Some(12345));
         assert_eq!(request.odometer_end, Some(12445));
-        assert_eq!(request.earnings, Some(dec!(100.00)));
+        assert_eq!(request.fare, Some(dec!(100.00)));
         assert_eq!(request.tips, Some(dec!(20.00)));
         assert_eq!(request.gas_cost, Some(dec!(15.00)));
         assert_eq!(request.notes, Some(Some("Updated notes".to_string())));

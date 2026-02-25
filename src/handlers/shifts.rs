@@ -127,7 +127,7 @@ pub async fn start_shift(
         odometer_start: payload.odometer_start,
         odometer_end: None,
         miles_driven: None,
-        earnings: calculations::normalize_decimal(Decimal::ZERO),
+        fare: calculations::normalize_decimal(Decimal::ZERO),
         tips: calculations::normalize_decimal(Decimal::ZERO),
         gas_cost: calculations::normalize_decimal(Decimal::ZERO),
         day_total: calculations::normalize_decimal(Decimal::ZERO),
@@ -161,11 +161,11 @@ pub async fn end_shift(
     // Validate inputs
     validation::validate_odometer(shift.odometer_start, payload.odometer_end)?;
 
-    let earnings = calculations::normalize_decimal(payload.earnings.unwrap_or(Decimal::ZERO));
+    let fare = calculations::normalize_decimal(payload.fare.unwrap_or(Decimal::ZERO));
     let tips = calculations::normalize_decimal(payload.tips.unwrap_or(Decimal::ZERO));
     let gas_cost = calculations::normalize_decimal(payload.gas_cost.unwrap_or(Decimal::ZERO));
 
-    validation::validate_monetary_values(&earnings, &tips, &gas_cost)?;
+    validation::validate_monetary_values(&fare, &tips, &gas_cost)?;
 
     let notes = validation::sanitize_notes(payload.notes);
 
@@ -173,7 +173,7 @@ pub async fn end_shift(
     let now = Utc::now();
     let miles_driven = calculations::calculate_miles(shift.odometer_start, payload.odometer_end);
     let hours_worked = calculations::calculate_hours(shift.start_time, now);
-    let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
+    let day_total = calculations::calculate_day_total(&fare, &tips, &gas_cost);
     let hourly_pay = calculations::calculate_hourly_pay(&day_total, &hours_worked);
 
     // Create update struct with proper SurrealDB types
@@ -184,7 +184,7 @@ pub async fn end_shift(
         odometer_end: Some(payload.odometer_end),
         miles_driven: Some(miles_driven),
         hours_worked: Some(hours_worked),
-        earnings: Some(earnings),
+        fare: Some(fare),
         tips: Some(tips),
         gas_cost: Some(gas_cost),
         day_total: Some(day_total),
@@ -258,7 +258,7 @@ pub async fn update_shift(
     // Merge updates with existing values, normalizing user inputs
     let odometer_start = payload.odometer_start.unwrap_or(shift.odometer_start);
     let odometer_end = payload.odometer_end.or(shift.odometer_end);
-    let earnings = calculations::normalize_decimal(payload.earnings.unwrap_or(shift.earnings));
+    let fare = calculations::normalize_decimal(payload.fare.unwrap_or(shift.fare));
     let tips = calculations::normalize_decimal(payload.tips.unwrap_or(shift.tips));
     let gas_cost = calculations::normalize_decimal(payload.gas_cost.unwrap_or(shift.gas_cost));
 
@@ -270,7 +270,7 @@ pub async fn update_shift(
     };
 
     // Validate monetary values
-    validation::validate_monetary_values(&earnings, &tips, &gas_cost)?;
+    validation::validate_monetary_values(&fare, &tips, &gas_cost)?;
 
     // Validate odometer if both values exist
     if let Some(end) = odometer_end {
@@ -284,7 +284,7 @@ pub async fn update_shift(
     let hours_worked =
         final_end_time.map(|end_time| calculations::calculate_hours(final_start_time, end_time));
 
-    let day_total = calculations::calculate_day_total(&earnings, &tips, &gas_cost);
+    let day_total = calculations::calculate_day_total(&fare, &tips, &gas_cost);
 
     let hourly_pay = hours_worked
         .as_ref()
@@ -298,7 +298,7 @@ pub async fn update_shift(
         odometer_end,
         miles_driven,
         hours_worked,
-        earnings: Some(earnings),
+        fare: Some(fare),
         tips: Some(tips),
         gas_cost: Some(gas_cost),
         day_total: Some(day_total),
@@ -375,7 +375,7 @@ pub async fn export_csv(
     };
 
     let mut csv = String::from(
-        "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Earnings,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
+        "ID,Start Time,End Time,Hours Worked,Odometer Start,Odometer End,Miles Driven,Fare,Tips,Gas Cost,Day Total,Hourly Pay,Notes\n",
     );
 
     for shift in &shifts {
@@ -396,7 +396,7 @@ pub async fn export_csv(
             shift.odometer_start,
             shift.odometer_end.map_or(String::new(), |o| o.to_string()),
             shift.miles_driven.map_or(String::new(), |m| m.to_string()),
-            shift.earnings,
+            shift.fare,
             shift.tips,
             shift.gas_cost,
             shift.day_total,

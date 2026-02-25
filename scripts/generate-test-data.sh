@@ -124,9 +124,9 @@ for i in "${!DATES[@]}"; do
     ODOMETER_START=$CURRENT_ODOMETER
     ODOMETER_END=$((ODOMETER_START + MILES_DRIVEN))
 
-    # Earnings ($30-$60)
-    EARNINGS=$(random_range 3000 6000)
-    EARNINGS=$(echo "scale=2; $EARNINGS / 100" | bc)
+    # Fare ($30-$60)
+    FARE=$(random_range 3000 6000)
+    FARE=$(echo "scale=2; $FARE / 100" | bc)
 
     # Tips ($35-$85)
     TIPS=$(random_range 3500 8500)
@@ -137,7 +137,7 @@ for i in "${!DATES[@]}"; do
     GAS_COST=$(echo "scale=2; $MILES_DRIVEN * $GAS_PER_MILE / 100" | bc)
 
     # Calculate day_total and hourly_pay
-    DAY_TOTAL=$(echo "scale=2; $EARNINGS + $TIPS - $GAS_COST" | bc)
+    DAY_TOTAL=$(echo "scale=2; $FARE + $TIPS - $GAS_COST" | bc)
     HOURLY_PAY=$(echo "scale=2; $DAY_TOTAL / $HOURS_WORKED" | bc)
 
     # Generate random ID
@@ -146,7 +146,7 @@ for i in "${!DATES[@]}"; do
     # Build shift object
     SHIFT_OBJ="    {
         day_total: ${DAY_TOTAL}dec,
-        earnings: ${EARNINGS}dec,
+        fare: ${FARE}dec,
         end_time: d'${END_TIME}',
         gas_cost: ${GAS_COST}dec,
         hourly_pay: ${HOURLY_PAY}dec,

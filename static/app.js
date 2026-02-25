@@ -160,7 +160,7 @@ async function handleEndShift() {
     return;
   }
 
-  const earnings = parseFloat(document.getElementById("earnings").value) || 0;
+  const fare = parseFloat(document.getElementById("fare").value) || 0;
   const tips = parseFloat(document.getElementById("tips").value) || 0;
   const gasCost = parseFloat(document.getElementById("gasCost").value) || 0;
   const notesValue = document.getElementById("notes").value.trim();
@@ -170,7 +170,7 @@ async function handleEndShift() {
     UI.showLoading();
     await API.endShift(state.activeShift.id, {
       odometer_end: parseInt(endOdo),
-      earnings,
+      fare,
       tips,
       gas_cost: gasCost,
       notes,
@@ -196,7 +196,7 @@ async function handleShiftCellEdit(e) {
 
   if (["odometer_start", "odometer_end"].includes(field)) {
     value = value ? parseInt(value) : null;
-  } else if (["earnings", "tips", "gas_cost"].includes(field)) {
+  } else if (["fare", "tips", "gas_cost"].includes(field)) {
     value = value ? parseFloat(value) : 0;
   } else if (field === "notes") {
     value = value.length === 0 ? null : value;

@@ -16,12 +16,8 @@ pub fn validate_monetary_value(name: &str, value: &Decimal) -> Result<()> {
     Ok(())
 }
 
-pub fn validate_monetary_values(
-    earnings: &Decimal,
-    tips: &Decimal,
-    gas_cost: &Decimal,
-) -> Result<()> {
-    validate_monetary_value("earnings", earnings)?;
+pub fn validate_monetary_values(fare: &Decimal, tips: &Decimal, gas_cost: &Decimal) -> Result<()> {
+    validate_monetary_value("fare", fare)?;
     validate_monetary_value("tips", tips)?;
     validate_monetary_value("gas_cost", gas_cost)?;
     Ok(())
@@ -66,19 +62,19 @@ mod tests {
 
     #[test]
     fn test_validate_monetary_value_valid() {
-        assert!(validate_monetary_value("earnings", &dec!(100.0)).is_ok());
+        assert!(validate_monetary_value("fare", &dec!(100.0)).is_ok());
         assert!(validate_monetary_value("tips", &dec!(0.0)).is_ok());
         assert!(validate_monetary_value("gas_cost", &dec!(50.50)).is_ok());
     }
 
     #[test]
     fn test_validate_monetary_value_invalid() {
-        let result = validate_monetary_value("earnings", &dec!(-10.0));
+        let result = validate_monetary_value("fare", &dec!(-10.0));
         assert!(result.is_err());
 
         match result.unwrap_err() {
             AppError::InvalidMonetaryValue(name) => {
-                assert_eq!(name, "earnings");
+                assert_eq!(name, "fare");
             }
             _ => panic!("Expected InvalidMonetaryValue error"),
         }

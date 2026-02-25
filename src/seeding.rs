@@ -19,7 +19,7 @@ struct ShiftData {
     start_minute: u32,
     hours_worked_float: f64,
     miles_driven: i32,
-    earnings_float: f64,
+    fare_float: f64,
     tips_float: f64,
     gas_per_mile: f64,
 }
@@ -38,7 +38,7 @@ impl ShiftData {
             start_minute: rng.random_range(0..60),
             hours_worked_float: rng.random_range(7.0..8.75),
             miles_driven: rng.random_range(80..161),
-            earnings_float: rng.random_range(30.0..60.0),
+            fare_float: rng.random_range(30.0..60.0),
             tips_float: rng.random_range(35.0..85.0),
             gas_per_mile: rng.random_range(0.08..0.15),
         })
@@ -68,8 +68,8 @@ impl ShiftData {
         let odometer_end = odometer_start + self.miles_driven;
         let gas_cost_float = self.miles_driven as f64 * self.gas_per_mile;
 
-        let earnings = Decimal::from_f64(self.earnings_float)
-            .expect("Invalid earnings float")
+        let fare = Decimal::from_f64(self.fare_float)
+            .expect("Invalid fare float")
             .round_dp(2);
         let tips = Decimal::from_f64(self.tips_float)
             .expect("Invalid tips float")
@@ -78,7 +78,7 @@ impl ShiftData {
             .expect("Invalid gas_cost float")
             .round_dp(2);
 
-        let day_total = (earnings + tips - gas_cost).round_dp(2);
+        let day_total = (fare + tips - gas_cost).round_dp(2);
         let hourly_pay = (day_total / hours_worked).round_dp(2);
 
         let record = ShiftRecord {
@@ -88,7 +88,7 @@ impl ShiftData {
             odometer_start,
             odometer_end: Some(odometer_end),
             miles_driven: Some(self.miles_driven),
-            earnings,
+            fare,
             tips,
             gas_cost,
             day_total,

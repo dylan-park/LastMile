@@ -10,7 +10,7 @@ LastMile was born out of necessity. When circumstances led me to food delivery w
 
 ## Features
 
-- **Shift Management** - Track start/end times, odometer readings, earnings, tips, and gas costs
+- **Shift Management** - Track start/end times, odometer readings, fare, tips, and gas costs
 - **Real-time Statistics** - View earnings, hours worked, average hourly rate, and total miles driven
 - **Flexible Filtering** - Filter shifts by month, all time, or custom date ranges
 - **Maintenance Tracking** - Set up mileage-based maintenance reminders for oil changes, tire rotations, and more
@@ -284,7 +284,6 @@ cargo run --release -- --e2e
 - [ ] Improve tests
   - [ ] Make E2E tests preserve original database
   - [ ] Save test outputs to .log files so actions script can upload artifacts on failure
-- [ ] Change `Earnings` to `Fare` throughout application to reduce confusion
 
 ## License
 
