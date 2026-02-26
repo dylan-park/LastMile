@@ -26,7 +26,7 @@ pub async fn teardown_all_data(
     );
     let db = state.db_provider.get_db(Some(&session_id.0)).await?;
 
-    // Count then delete shifts
+    // Count shifts, then delete and consume result handle to guarantee completion
     let mut shifts_count_result = db.query("SELECT count() FROM shifts GROUP ALL").await?;
     let shifts_counts: Vec<serde_json::Value> = shifts_count_result.take(0)?;
     let shifts_deleted = shifts_counts
@@ -34,9 +34,11 @@ pub async fn teardown_all_data(
         .and_then(|v| v.get("count"))
         .and_then(|v| v.as_u64())
         .unwrap_or(0) as usize;
-    db.query("DELETE shifts").await?;
+    db.query("DELETE shifts RETURN NONE")
+        .await?
+        .take::<Vec<serde_json::Value>>(0)?;
 
-    // Count then delete maintenance items
+    // Count maintenance items, then delete and consume result handle to guarantee completion
     let mut maintenance_count_result = db
         .query("SELECT count() FROM maintenance GROUP ALL")
         .await?;
@@ -46,6 +48,9 @@ pub async fn teardown_all_data(
         .and_then(|v| v.get("count"))
         .and_then(|v| v.as_u64())
         .unwrap_or(0) as usize;
+    db.query("DELETE maintenance RETURN NONE")
+        .await?
+        .take::<Vec<serde_json::Value>>(0)?;
 
     info!(
         "TEARDOWN: Deleted {} shifts and {} maintenance items",
@@ -54,7 +59,7 @@ pub async fn teardown_all_data(
 
     Ok(Json(TeardownResponse {
         message: "All data cleared successfully".to_string(),
-        shifts_deleted,
-        maintenance_deleted,
+        shifts_deleted: shifts_deleted,
+        maintenance_deleted: maintenance_deleted,
     }))
 }
