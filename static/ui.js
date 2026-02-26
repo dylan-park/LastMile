@@ -88,6 +88,8 @@ const UI = {
       );
     });
 
+    const shiftsContainer = tbody.closest(".table-container");
+
     if (filtered.length === 0) {
       tbody.innerHTML = this._getEmptyState(
         13,
@@ -97,8 +99,11 @@ const UI = {
           : "Start your first shift to begin tracking",
         "calendar",
       );
+      if (shiftsContainer) shiftsContainer.classList.remove("has-data");
       return;
     }
+
+    if (shiftsContainer) shiftsContainer.classList.add("has-data");
 
     tbody.innerHTML = filtered
       .map(
@@ -144,6 +149,8 @@ const UI = {
       );
     });
 
+    const maintenanceContainer = tbody.closest(".table-container");
+
     if (filtered.length === 0) {
       tbody.innerHTML = this._getEmptyState(
         7,
@@ -153,8 +160,12 @@ const UI = {
           : "Click 'Add Maintenance Item' to create one",
         "tool",
       );
+      if (maintenanceContainer)
+        maintenanceContainer.classList.remove("has-data");
       return;
     }
+
+    if (maintenanceContainer) maintenanceContainer.classList.add("has-data");
 
     tbody.innerHTML = filtered
       .map((item) => {

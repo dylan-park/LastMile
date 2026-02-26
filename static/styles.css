@@ -1182,8 +1182,9 @@ td[contenteditable="true"]:focus {
     position: relative;
 }
 
-/* Right fade — hidden by default, shown via .can-scroll-right (set by JS) */
-.table-container::after {
+/* Right fade — hidden by default, shown via .can-scroll-right (set by JS).
+   Only active when the table has data (.has-data). */
+.table-container.has-data::after {
     content: "";
     position: absolute;
     top: 0;
@@ -1198,17 +1199,18 @@ td[contenteditable="true"]:focus {
     z-index: 3;
 }
 
-.table-container.can-scroll-right::after {
+.table-container.has-data.can-scroll-right::after {
     opacity: 1;
 }
 
-.table-container.scrolled-end::after {
+.table-container.has-data.scrolled-end::after {
     opacity: 0;
 }
 
 /* Left fade — hidden by default, visible once user scrolls right.
-   Offset by --sticky-col-width so it doesn't fade over the pinned column. */
-.table-container::before {
+   Offset by --sticky-col-width so it doesn't fade over the pinned column.
+   Only active when the table has data (.has-data). */
+.table-container.has-data::before {
     content: "";
     position: absolute;
     top: 0;
@@ -1223,7 +1225,7 @@ td[contenteditable="true"]:focus {
     z-index: 3;
 }
 
-.table-container.scrolled-start::before {
+.table-container.has-data.scrolled-start::before {
     opacity: 1;
 }
 
@@ -1237,22 +1239,22 @@ td[contenteditable="true"]:focus {
     user-select: none;
 }
 
-/* Sticky first column — always on, harmless when all columns are visible */
-#shiftsTable thead tr th:first-child,
-#maintenanceTable thead tr th:first-child {
+/* Sticky first column — only when table has data */
+.table-container.has-data #shiftsTable thead tr th:first-child,
+.table-container.has-data #maintenanceTable thead tr th:first-child {
     position: sticky;
     left: 0;
     z-index: 11;
     background: var(--bg-tertiary);
 }
 
-#shiftsTable thead tr th:first-child:hover,
-#maintenanceTable thead tr th:first-child:hover {
+.table-container.has-data #shiftsTable thead tr th:first-child:hover,
+.table-container.has-data #maintenanceTable thead tr th:first-child:hover {
     background: var(--bg-hover);
 }
 
-#shiftsTable tbody tr td:first-child,
-#maintenanceTable tbody tr td:first-child {
+.table-container.has-data #shiftsTable tbody tr td:first-child,
+.table-container.has-data #maintenanceTable tbody tr td:first-child {
     position: sticky;
     left: 0;
     z-index: 1;
@@ -1262,36 +1264,68 @@ td[contenteditable="true"]:focus {
 
 /* Re-declare all interactive states for the sticky td — the explicit
    background above would otherwise win over inherited row states. */
-#shiftsTable tbody tr:hover td:first-child,
-#maintenanceTable tbody tr:hover td:first-child {
+.table-container.has-data #shiftsTable tbody tr:hover td:first-child,
+.table-container.has-data #maintenanceTable tbody tr:hover td:first-child {
     background: var(--bg-hover);
 }
 
-#shiftsTable tbody tr td:first-child.datetime-cell:hover,
-#maintenanceTable tbody tr td:first-child.datetime-cell:hover {
+.table-container.has-data
+    #shiftsTable
+    tbody
+    tr
+    td:first-child.datetime-cell:hover,
+.table-container.has-data
+    #maintenanceTable
+    tbody
+    tr
+    td:first-child.datetime-cell:hover {
     background: var(--accent-light);
 }
 
-#shiftsTable tbody tr td:first-child[contenteditable="true"]:hover,
-#maintenanceTable tbody tr td:first-child[contenteditable="true"]:hover {
+.table-container.has-data
+    #shiftsTable
+    tbody
+    tr
+    td:first-child[contenteditable="true"]:hover,
+.table-container.has-data
+    #maintenanceTable
+    tbody
+    tr
+    td:first-child[contenteditable="true"]:hover {
     background: var(--accent-light);
 }
 
-#shiftsTable tbody tr td:first-child[contenteditable="true"]:focus,
-#maintenanceTable tbody tr td:first-child[contenteditable="true"]:focus {
+.table-container.has-data
+    #shiftsTable
+    tbody
+    tr
+    td:first-child[contenteditable="true"]:focus,
+.table-container.has-data
+    #maintenanceTable
+    tbody
+    tr
+    td:first-child[contenteditable="true"]:focus {
     background: var(--bg-primary);
 }
 
-#shiftsTable tbody tr td:first-child.calculated,
-#maintenanceTable tbody tr td:first-child.calculated {
+.table-container.has-data #shiftsTable tbody tr td:first-child.calculated,
+.table-container.has-data #maintenanceTable tbody tr td:first-child.calculated {
     background: var(--calculated-bg);
 }
 
-#maintenanceTable tbody tr.maintenance-required td:first-child {
+.table-container.has-data
+    #maintenanceTable
+    tbody
+    tr.maintenance-required
+    td:first-child {
     background: var(--maintenance-required-bg);
 }
 
-#maintenanceTable tbody tr.maintenance-required:hover td:first-child {
+.table-container.has-data
+    #maintenanceTable
+    tbody
+    tr.maintenance-required:hover
+    td:first-child {
     background: var(--danger-light);
 }
 
